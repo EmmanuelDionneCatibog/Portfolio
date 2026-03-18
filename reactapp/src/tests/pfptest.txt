@@ -5,181 +5,182 @@ const ClipArtCat = ({ pupilOffset }) => {
   const rightPupil = { cx: 130 + pupilOffset.x, cy: 80.5 + pupilOffset.y };
 
   return (
-    <svg width="100%" height="100%" viewBox="40 10 200 220" fill="none">
+    <svg width="600" height="600" viewBox="-200 -200 600 600" fill="none">
+      {/* Legs */}
       <polygon
-        points="-12,118 288,118 288,288 -12,288"
-        fill="#476c45"
-        stroke="#476c45"
-        strokeWidth="3"
-        strokeLinejoin="round"
-      />
-      <polygon
-        points="107,193 101,198 90,218 95,236 115,243 131,230"
+        points="69,155 63,160 52,180 57,198 77,205 93,192"
         fill="#4c312c"
         stroke="#4c312c"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="131,230 115,243 106,214"
+        points="93,192 77,205 68,176"
         fill="#241310"
         stroke="#241310"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="131,230 115,243 115,247 128,261 148,264 268,264 268,228"
+        points="93,192 77,205 77,209 90,223 110,226 230,226 230,190"
         fill="#4c312c"
         stroke="#4c312c"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="169,238 148,264 128,261 115,247 115,243 131,230"
+        points="131,200 110,226 90,223 77,209 77,205 93,192"
         fill="#301915"
         stroke="#301915"
         strokeWidth="3"
         strokeLinejoin="round"
       />
+
+      {/* Tail */}
       <polygon
-        points="217,126 238,126 252,128 263,131 266,123 238,116 221,120"
+        points="179,88 200,88 214,90 225,93 228,85 200,78 183,82"
         fill="#241310"
         stroke="#241310"
         strokeWidth="3"
         strokeLinejoin="round"
       />
+
+      {/* Body */}
       <polygon
-        points="112,168 104,190 106,214 131,234 169,238 202,236 268,223 266,136 245,132 238,126 217,126"
+        points="74,130 66,152 68,176 93,196 131,200 164,198 230,185 228,98 207,94 200,88 179,88"
         fill="#F9F6EE"
         stroke="#F9F6EE"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="112,168 104,190 106,214 131,234 169,238 202,236 258,223 220,187 206,206 214,182 183,126"
+        points="74,130 66,152 68,176 93,196 131,200 164,198 220,185 182,149 168,168 176,144 145,88"
         fill="#e2e0d8"
         stroke="#e2e0d8"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="132,101 115,190 131,234 169,238 202,236 201,216 196,210 181,225 195,197 195,178"
+        points="94,63 77,152 93,196 131,200 164,198 163,178 158,172 143,187 157,159 157,140"
         fill="#c8c7c2"
       />
       <polygon
-        points="231,132 234,138 247,144 268,161 264,223 266,136 245,132 238,126 217,126"
+        points="193,94 196,100 209,106 230,123 226,185 228,98 207,94 200,88 179,88"
         fill="#e2e0d8"
         stroke="#e2e0d8"
         strokeWidth="3"
         strokeLinejoin="round"
       />
+
+      {/* Ears */}
       <polygon
-        points="166,88 174,82 200,56 208,53 208,60 203,88 201,104 193,125"
+        points="128,50 136,44 162,18 170,15 170,22 165,50 163,66 155,87"
         fill="#241310"
         stroke="#241310"
         strokeWidth="4"
         strokeLinejoin="round"
       />
       <polygon
-        points="180,93 179,85 199,60 206,57 206,60 200,88 194,97 183,103"
+        points="142,55 141,47 161,22 168,19 168,22 162,50 156,59 145,65 "
         fill="#979195"
         stroke="#979195"
         strokeWidth="3"
         strokeLinejoin="round"
       />
+
       <polygon
-        points="127,92 113,83 91,67 83,63 99,103 102,118"
+        points="89,54 75,45 53,29 45,25 61,65 64,80"
         fill="#241310"
         stroke="#241310"
         strokeWidth="3"
         strokeLinejoin="round"
       />
       <polygon
-        points="123,101 105,82 91,70 87,67 102,103 105,118"
+        points="85,63 67,44 53,32 49,29 64,65 67,80"
         fill="#979195"
         stroke="#979195"
         strokeWidth="3"
         strokeLinejoin="round"
       />
+
+      {/* Collar */}
       <polygon
-        points="118,173 185,171 167,185 158,187 138,187 128,183"
+        points="80,135 147,133 129,147 120,149 100,149 90,145"
         fill="#3f3f3f"
         stroke="#3f3f3f"
         strokeWidth="4"
         strokeLinejoin="round"
       />
+
+      {/* Head */}
       <polygon
-        points="188,100 201,124 199,154 182,172 145,177 121,174 104,165 98,123 111,98 124,91 163,86"
+        points="150,62 163,86 161,116 144,134 107,139 83,136 66,127 60,85 73,60 86,53 125,48"
         fill="#F9F6EE"
         stroke="#F9F6EE"
         strokeWidth="4"
         strokeLinejoin="round"
       />
       <polygon
-        points="128,93 160,89 163,102 171,104 177,112 192,120 188,143 174,148 170,157 151,172 142,175 130,170 115,160 112,149 105,143 100,126 109,113 115,103 126,101"
+        points="90,55 122,51 125,64 133,66 139,74 154,82 150,105 136,110 132,119 113,134 104,137 92,132 77,122 74,111 67,105 62,88 71,75 77,65 88,63"
         fill="#4c312c"
         stroke="#4c312c"
         strokeWidth="2"
         strokeLinejoin="round"
       />
       <polygon
-        points="141,151 150,155 160,148 158,140 167,146 178,140 186,124 170,110 169,108 160,106 146,101 130,107 116,111 113,111 108,122 108,127 108,137 115,141 125,135 124,150 127,155 133,155"
+        points="103,113 112,117 122,110 120,102 129,108 140,102 148,86 132,72 131,70 122,68 108,63 92,69 78,73 75,73 70,84 70,89 70,99 77,103 87,97 86,112 89,117 95,117"
         fill="#241310"
         stroke="#241310"
         strokeWidth="2"
         strokeLinejoin="round"
       />
       <polygon
-        points="188,100 201,124"
+        points="150,62 163,86"
         fill="#F9F6EE"
         stroke="#F9F6EE"
         strokeWidth="4"
         strokeLinejoin="round"
       />
+
+      {/* Left eye */}
       <polygon
-        points="129.5,118 127,124 119,127.5 114,125 111,122 111,117 114,111.5 119,111 122,111.5 125.5,114"
+        points="91.5,80 89,86 81,89.5 76,87 73,84 73,79 76,73.5 81,73 84,73.5 87.5,76"
         fill="#545454"
         stroke="#545454"
         strokeWidth="1"
         strokeLinejoin="round"
       />
-      <circle cx="119.5" cy="119" r="8" fill="#6F8FAF" />
-      <circle
-        cx={leftPupil.cx + 38}
-        cy={leftPupil.cy + 38}
-        r="6.9"
-        fill="black"
-      />
+      <circle cx="81.5" cy="81" r="8" fill="#6F8FAF" />
+      <circle cx={leftPupil.cx} cy={leftPupil.cy} r="6.9" fill="black" />
+
+      {/* Right eye */}
       <polygon
-        points="156,123 158,127 165,129 175,127 180,121 180,114.5 174.5,110 168,110 160,113.5"
+        points="118,85 120,89 127,91 137,89 142,83 142,76.5 136.5,72 130,72 122,75.5"
         fill="#403a3e"
         stroke="#403a3e"
         strokeWidth="1"
         strokeLinejoin="round"
       />
       <polygon
-        points="159,117.5 159,118.5 160.5,124 166,126 174.5,124 178,120 177.5,114 173,111 168,111 163,113"
+        points="121,79.5 121,80.5 122.5,86 128,88 136.5,86 140,82 139.5,76 135,73 130,73 125,75"
         fill="#6a6a6a"
         stroke="#6a6a6a"
         strokeWidth="1"
         strokeLinejoin="round"
       />
-      <circle cx="168" cy="118.5" r="8.5" fill="#6F8FAF" />
-      <circle
-        cx={rightPupil.cx + 38}
-        cy={rightPupil.cy + 38}
-        r="7.5"
-        fill="black"
-      />
+      <circle cx="130" cy="80.5" r="8.5" fill="#6F8FAF" />
+      <circle cx={rightPupil.cx} cy={rightPupil.cy} r="7.5" fill="black" />
+
+      {/* Nose */}
       <polygon
-        points="141,149 152,142 132,142"
+        points="103,111 114,104 94,104"
         fill="black"
         stroke="black"
         strokeWidth="2"
         strokeLinejoin="round"
       />
       <path
-        d="M141,149 141,157 135,161 130,163 135,161 141,157 148,161 153,163"
+        d="M103,111 103,119 97,123 92,125 97,123 103,119 110,123 115,125"
         stroke="black"
         strokeWidth="1"
         strokeLinecap="round"
@@ -210,13 +211,6 @@ export default function ImageToCat() {
 
   const fade = (visible) => ({
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
     transition: "opacity 0.35s ease, transform 0.35s ease",
     opacity: visible ? 1 : 0,
     transform: visible ? "scale(1)" : "scale(0.85)",
@@ -224,201 +218,42 @@ export default function ImageToCat() {
   });
 
   return (
-    <div style={{ position: "relative", width: 250, height: 250 }}>
-      {/* Geometric decoration behind the circle */}
-      <svg
-        style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 340,
-          height: 340,
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-        viewBox="0 0 340 340">
-        <rect
-          x="70"
-          y="70"
-          width="200"
-          height="200"
-          rx="4"
-          fill="none"
-          stroke="#db9834"
-          strokeWidth="1.2"
-          opacity="0.4"
-          transform="rotate(15, 170, 170)"
+    <div
+      ref={containerRef}
+      onClick={handleClick}
+      onMouseMove={handleMouseMove}
+      style={{
+        width: 250,
+        height: 250,
+        borderRadius: "50%",
+        border: "1.5px solid #aaa",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        position: "relative",
+        overflow: "hidden",
+        transition: "transform 0.2s ease",
+        background: clicked ? "#739072" : "transparent",
+      }}
+    >
+      {/* Photo */}
+      <div style={fade(!clicked)}>
+        <img
+          src="elyze.png"
+          alt="profile picture"
+          style={{
+            width: 250,
+            height: 250,
+            objectFit: "cover",
+            display: "block",
+          }}
         />
-        <rect
-          x="90"
-          y="90"
-          width="160"
-          height="160"
-          rx="4"
-          fill="none"
-          stroke="#db9834"
-          strokeWidth="0.8"
-          opacity="0.28"
-          transform="rotate(30, 170, 170)"
-        />
-        <rect
-          x="112"
-          y="112"
-          width="116"
-          height="116"
-          rx="4"
-          fill="none"
-          stroke="#db9834"
-          strokeWidth="0.7"
-          opacity="0.22"
-          transform="rotate(45, 170, 170)"
-        />
-        <line
-          x1="170"
-          y1="40"
-          x2="170"
-          y2="300"
-          stroke="#db9834"
-          strokeWidth="0.5"
-          opacity="0.15"
-        />
-        <line
-          x1="40"
-          y1="170"
-          x2="300"
-          y2="170"
-          stroke="#db9834"
-          strokeWidth="0.5"
-          opacity="0.15"
-        />
-        <line
-          x1="52"
-          y1="52"
-          x2="82"
-          y2="52"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="52"
-          y1="52"
-          x2="52"
-          y2="82"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="288"
-          y1="52"
-          x2="258"
-          y2="52"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="288"
-          y1="52"
-          x2="288"
-          y2="82"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="52"
-          y1="288"
-          x2="82"
-          y2="288"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="52"
-          y1="288"
-          x2="52"
-          y2="258"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="288"
-          y1="288"
-          x2="258"
-          y2="288"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <line
-          x1="288"
-          y1="288"
-          x2="288"
-          y2="258"
-          stroke="#db9834"
-          strokeWidth="1"
-          opacity="0.35"
-        />
-        <circle cx="170" cy="40" r="2.5" fill="#db9834" opacity="0.4" />
-        <circle cx="170" cy="300" r="2.5" fill="#db9834" opacity="0.4" />
-        <circle cx="40" cy="170" r="2.5" fill="#db9834" opacity="0.4" />
-        <circle cx="300" cy="170" r="2.5" fill="#db9834" opacity="0.4" />
-        <path
-          d="M108,48 A122,122 0 0,1 232,48"
-          fill="none"
-          stroke="#db9834"
-          strokeWidth="0.8"
-          opacity="0.22"
-        />
-        <path
-          d="M108,292 A122,122 0 0,0 232,292"
-          fill="none"
-          stroke="#db9834"
-          strokeWidth="0.8"
-          opacity="0.22"
-        />
-      </svg>
+      </div>
 
-      {/* Circle */}
-      <div
-        ref={containerRef}
-        onClick={handleClick}
-        onMouseMove={handleMouseMove}
-        style={{
-          width: 250,
-          height: 250,
-          borderRadius: "50%",
-          border: "2px solid #db9834",
-          cursor: "pointer",
-          position: "relative",
-          overflow: "hidden",
-          transition: "transform 0.2s ease",
-          background: clicked ? "#ADD8E6" : "transparent",
-          zIndex: 1,
-        }}>
-        {/* Photo */}
-        <div style={fade(!clicked)}>
-          <img
-            src="pfp.jpg"
-            alt="profile picture"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-            }}
-          />
-        </div>
-
-        {/* Cat */}
-        <div style={fade(clicked)}>
-          <ClipArtCat pupilOffset={pupilOffset} />
-        </div>
+      {/* Clipart cat */}
+      <div style={fade(clicked)}>
+        <ClipArtCat pupilOffset={pupilOffset} />
       </div>
     </div>
   );
