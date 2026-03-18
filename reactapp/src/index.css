@@ -82,7 +82,7 @@ button {
 .resume-btn:hover {
   color: #1c1c2c;
 }
-/* Add responsive breakpoints */
+
 @media (max-width: 768px) {
   .resume-btn {
     width: 100%;
@@ -99,7 +99,6 @@ button {
   }
 }
 
-/* Improve touch targets on mobile */
 @media (max-width: 480px) {
   nav span {
     padding: 8px;

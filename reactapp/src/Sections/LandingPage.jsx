@@ -131,7 +131,6 @@ export default function PortfolioLanding() {
               </div>
             </div>
 
-            {/* RIGHT */}
             <div className={`hero-image-wrap ${show ? "visible" : "hidden"}`}>
               <div
                 className="image-scaler"
