@@ -82,7 +82,6 @@ button {
 .resume-btn:hover {
   color: #1c1c2c;
 }
-
 @media (max-width: 768px) {
   .resume-btn {
     width: 100%;
