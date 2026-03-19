@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 export default function Navbar() {
   return (
     <>
@@ -12,7 +14,6 @@ export default function Navbar() {
           cursor: pointer;
         }
 
-        /* Underline fill effect — same idea as the resume button's ::before wipe */
         .nav-link::before {
           content: "";
           position: absolute;
@@ -49,14 +50,16 @@ export default function Navbar() {
           flexWrap: "wrap",
           gap: "12px",
         }}>
-        <span
+        <Link
+          to="/"
           style={{
             color: "#db9834",
             fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
             fontWeight: 600,
+            textDecoration: "none",
           }}>
-          Dionne Catibog
-        </span>
+          DC
+        </Link>
 
         <div
           style={{
@@ -64,18 +67,18 @@ export default function Navbar() {
             gap: "clamp(16px, 3vw, 32px)",
             flexWrap: "wrap",
           }}>
-          <a href="#hero" className="nav-link">
+          <Link to="/" className="nav-link">
             Home
-          </a>
-          <a href="#projects" className="nav-link">
+          </Link>
+          <Link to="/projects" className="nav-link">
             Projects
-          </a>
-          <a href="#about" className="nav-link">
+          </Link>
+          <Link to="/about" className="nav-link">
             About
-          </a>
-          <a href="#contact" className="nav-link">
+          </Link>
+          <Link to="/contact" className="nav-link">
             Contact
-          </a>
+          </Link>
         </div>
       </nav>
     </>
