@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ImageToCat from "../Components/ProfilePic";
+import LaptopSection from "../Components/LaptopSection";
 
 export default function PortfolioLanding() {
   const [show, setShow] = useState(false);
@@ -14,22 +15,97 @@ export default function PortfolioLanding() {
     transition: `all 0.6s ease ${delay}s`,
   });
 
-  // 340px base size. Scale from 0.7 on small screens up to 1.3 on wide ones.
   const imageScale = Math.min(Math.max(window.innerWidth / 1600, 0.7), 1.3);
 
   return (
-    <>
+    // Outer wrapper scrolls — no overflow: hidden here
+    <div
+      style={{
+        fontFamily: "system-ui, sans-serif",
+        width: "100%",
+        backgroundColor: "#25263a",
+      }}>
+      {/* ── HERO SECTION ── */}
       <div
         style={{
-          fontFamily: "system-ui, sans-serif",
           height: "100vh",
           width: "100%",
-          backgroundColor: "#25263a",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
           position: "relative",
         }}>
+        {/* WAVE BACKGROUND */}
+        <svg
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 1,
+            pointerEvents: "none",
+          }}
+          viewBox="0 0 900 500"
+          preserveAspectRatio="xMidYMid slice">
+          <path
+            d="M-20,80  C100,30  200,130 350,70  S550,10  700,80  S850,150 920,90"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="1"
+            opacity="0.35"
+          />
+          <path
+            d="M-20,160 C80,110  220,210 380,140 S580,70  730,145 S870,210 920,160"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.8"
+            opacity="0.25"
+          />
+          <path
+            d="M-20,260 C120,200 240,310 420,240 S620,160 760,240 S880,300 920,260"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="1.1"
+            opacity="0.3"
+          />
+          <path
+            d="M-20,360 C100,300 260,400 440,330 S640,250 780,330 S880,400 920,360"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.8"
+            opacity="0.2"
+          />
+          <path
+            d="M-20,440 C140,380 280,470 460,410 S660,340 800,420 S890,470 920,440"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.9"
+            opacity="0.25"
+          />
+          <path
+            d="M-20,110 C150,60  270,160 430,100 S630,40  770,110 S880,170 920,120"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.7"
+            opacity="0.18"
+          />
+          <path
+            d="M-20,310 C110,250 260,360 440,290 S640,210 780,290 S880,360 920,310"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.7"
+            opacity="0.18"
+          />
+          <path
+            d="M-20,490 C130,430 290,510 470,450 S670,380 820,460 S900,500 920,490"
+            fill="none"
+            stroke="#db9834"
+            strokeWidth="0.6"
+            opacity="0.15"
+          />
+        </svg>
+
         {/* NAVBAR */}
         <nav
           style={{
@@ -70,12 +146,11 @@ export default function PortfolioLanding() {
           </div>
         </nav>
 
-        {/* HERO */}
+        {/* HERO CONTENT */}
         <section
           className="hero-section"
           style={{ position: "relative", zIndex: 2 }}>
           <div className="hero-inner">
-            {/* LEFT */}
             <div className="hero-left">
               <div className={`hero-rect ${show ? "visible" : "hidden"}`} />
               <div className={`hero-text ${show ? "visible" : "hidden"}`}>
@@ -86,7 +161,6 @@ export default function PortfolioLanding() {
                   modern, clean digital experiences through thoughtful design
                   and efficient code.
                 </p>
-
                 <div className="social-icons">
                   <a
                     href="https://github.com/EmmanuelDionneCatibog"
@@ -110,7 +184,6 @@ export default function PortfolioLanding() {
                     </svg>
                   </a>
                 </div>
-
                 <a
                   href="/Catibog_Dionne_Resume_2026.pdf"
                   download
@@ -141,6 +214,9 @@ export default function PortfolioLanding() {
           </div>
         </section>
       </div>
-    </>
+
+      {/* ── LAPTOP / PROJECTS SECTION ── */}
+      <LaptopSection />
+    </div>
   );
 }
