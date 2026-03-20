@@ -1,41 +1,106 @@
 import { useEffect, useRef, useState } from "react";
 import FolderIcon from "./FolderIcon";
-import FolderWindow from "./FolderWindow";
+import FolderWindow, { VideoPlayerWindow } from "./FolderWindow";
 
 export const PROJECTS = [
   {
-    name: "Chess AI",
-    desc: "A chess engine built with minimax and alpha-beta pruning. Supports multiple difficulty levels.",
-    tag: "Python / ML",
+    name: "ColorWaste",
+    url: "https://colorwaste.com",
+    tag: "C++ / JS / PHP / MySQL ",
+    subject: "Machine Learning",
+    branch: "Computer Vision",
+    date: "February 2026",
+    status: "Completed",
+    shortDesc:
+      "ColorWaste is a waste segregation system using computer vision and sensors to automatically classify waste. It provides real-time feedback through a dashboard",
+    icon: "/ColorWaste.png",
+    image: null,
+    video: "/Dashboard - Demo Vid.mp4",
+    videoLabel: "Dashboard Demo",
+    video2: "/Prototype - Demo Vid.mp4",
+    video2Label: "Prototype Demo",
+    iconLabel: "ColorWaste Website",
+    logo: "/ColorWaste.png",
   },
   {
     name: "Portfolio",
-    desc: "This very site — built with React, Three.js, and a lot of scroll animations.",
+    url: null,
     tag: "React / Three.js",
+    subject: "Web Development",
+    branch: "Front-End",
+    date: "—",
+    status: "—",
+    shortDesc: "Placeholder description.",
+    desc: "This very site — built with React, Three.js, and scroll animations.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
   },
   {
     name: "Game Client",
-    desc: "A multiplayer game lobby and matchmaking system with real-time updates via WebSockets.",
+    url: null,
     tag: "Node / WS",
+    subject: "Web Development",
+    branch: "Back-End",
+    date: "—",
+    status: "—",
+    shortDesc: "Placeholder description.",
+    desc: "A multiplayer game lobby and matchmaking system with real-time WebSockets.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
   },
   {
     name: "Data Dashboard",
-    desc: "An analytics dashboard visualizing large datasets with D3.js and CSV ingestion.",
+    url: null,
     tag: "D3 / React",
+    subject: "Data Visualization",
+    branch: "Analytics",
+    date: "—",
+    status: "—",
+    shortDesc: "Placeholder description.",
+    desc: "An analytics dashboard visualizing large datasets with D3.js.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
   },
   {
     name: "CLI Toolkit",
-    desc: "A command-line developer toolkit with file scaffolding, linting and build automation.",
+    url: null,
     tag: "Node / CLI",
+    subject: "Developer Tools",
+    branch: "Automation",
+    date: "—",
+    status: "—",
+    shortDesc: "Placeholder description.",
+    desc: "A command-line developer toolkit with scaffolding and build automation.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
   },
   {
     name: "Mobile App",
-    desc: "A cross-platform mobile app for tracking study sessions and goals, built with React Native.",
+    url: null,
     tag: "React Native",
+    subject: "Mobile Development",
+    branch: "Cross-Platform",
+    date: "—",
+    status: "—",
+    shortDesc: "Placeholder description.",
+    desc: "A cross-platform mobile app for tracking study sessions and goals.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
   },
 ];
 
 export default function WindowsDesktop({ visible, onBack, onSignOut }) {
+  // windows: { id, type: 'folder'|'video', projIdx?, src?, title?, minimized }
   const [windows, setWindows] = useState([]);
   const [zOrders, setZOrders] = useState([]);
   const [time, setTime] = useState("");
@@ -57,7 +122,19 @@ export default function WindowsDesktop({ visible, onBack, onSignOut }) {
 
   const openWindow = (projIdx) => {
     const id = nextId.current++;
-    setWindows((w) => [...w, { id, projIdx, minimized: false }]);
+    setWindows((w) => [
+      ...w,
+      { id, type: "folder", projIdx, minimized: false },
+    ]);
+    setZOrders((z) => [...z, id]);
+  };
+
+  const openVideo = (src, title) => {
+    const id = nextId.current++;
+    setWindows((w) => [
+      ...w,
+      { id, type: "video", src, title, minimized: false },
+    ]);
     setZOrders((z) => [...z, id]);
   };
 
@@ -131,19 +208,33 @@ export default function WindowsDesktop({ visible, onBack, onSignOut }) {
       </div>
 
       {/* Windows */}
-      {windows.map(
-        (win) =>
-          !win.minimized && (
-            <FolderWindow
+      {windows.map((win) => {
+        if (win.minimized) return null;
+        if (win.type === "video") {
+          return (
+            <VideoPlayerWindow
               key={win.id}
-              project={PROJECTS[win.projIdx]}
+              src={win.src}
+              title={win.title}
               zIndex={getZ(win.id)}
               onClose={() => closeWindow(win.id)}
               onMinimize={() => minimizeWindow(win.id)}
               onFocus={() => focusWindow(win.id)}
             />
-          ),
-      )}
+          );
+        }
+        return (
+          <FolderWindow
+            key={win.id}
+            project={PROJECTS[win.projIdx]}
+            zIndex={getZ(win.id)}
+            onClose={() => closeWindow(win.id)}
+            onMinimize={() => minimizeWindow(win.id)}
+            onFocus={() => focusWindow(win.id)}
+            onOpenVideo={openVideo}
+          />
+        );
+      })}
 
       {/* ── TASKBAR ── */}
       <div
@@ -183,7 +274,7 @@ export default function WindowsDesktop({ visible, onBack, onSignOut }) {
             fontFamily: "system-ui, sans-serif",
             transition: "background 0.15s",
           }}>
-          <span style={{ fontSize: "16px" }}>⊞</span>
+          <span style={{ fontSize: "16px" }}>⊞</span> Start
         </button>
 
         {/* Open window tabs */}
@@ -232,7 +323,7 @@ export default function WindowsDesktop({ visible, onBack, onSignOut }) {
                   opacity="0.8"
                 />
               </svg>
-              {PROJECTS[win.projIdx].name}
+              {win.type === "video" ? win.title : PROJECTS[win.projIdx].name}
             </button>
           ))}
         </div>
