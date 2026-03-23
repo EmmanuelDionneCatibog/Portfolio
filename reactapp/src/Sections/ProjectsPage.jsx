@@ -12,7 +12,7 @@ export default function ProjectsPage() {
   const isRestoringRef = useRef(false);
   const resetProgressRef = useRef(null);
   const zoomingOutRef = useRef(false);
-  const targetProgressRef = useRef(0); // mirrors targetProgress inside effect
+  const targetProgressRef = useRef(0);
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);

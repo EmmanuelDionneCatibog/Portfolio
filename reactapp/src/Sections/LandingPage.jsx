@@ -27,7 +27,6 @@ export default function LandingPage() {
         flexDirection: "column",
         overflow: "hidden",
         position: "relative",
-        // Push content below the fixed navbar (~70px tall)
         paddingTop: "clamp(56px, 8vh, 72px)",
         boxSizing: "border-box",
       }}>
