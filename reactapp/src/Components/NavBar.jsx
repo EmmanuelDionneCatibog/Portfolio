@@ -1,6 +1,9 @@
-import { Link } from "react-router-dom";
+export default function NavBar() {
+  const scrollTo = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth" });
+  };
 
-export default function Navbar() {
   return (
     <>
       <style>{`
@@ -10,29 +13,21 @@ export default function Navbar() {
           text-decoration: none;
           font-size: clamp(0.85rem, 1.2vw, 1rem);
           padding: 4px 0;
-          overflow: hidden;
           cursor: pointer;
+          background: none;
+          border: none;
+          font-family: inherit;
         }
-
         .nav-link::before {
           content: "";
           position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 0%;
-          height: 2px;
+          bottom: 0; left: 0;
+          width: 0%; height: 2px;
           background-color: #db9834;
           transition: width 0.35s ease;
         }
-
-        .nav-link:hover::before {
-          width: 100%;
-        }
-
-        .nav-link:hover {
-          color: #db9834;
-          transition: color 0.35s ease;
-        }
+        .nav-link:hover::before { width: 100%; }
+        .nav-link:hover { color: #db9834; transition: color 0.35s ease; }
       `}</style>
 
       <nav
@@ -46,20 +41,24 @@ export default function Navbar() {
           padding: "clamp(15px, 2.5vh, 22px) clamp(24px, 5vw, 60px)",
           background: "#1c1c2c",
           boxSizing: "border-box",
-          zIndex: 100,
+          zIndex: 1000,
           flexWrap: "wrap",
           gap: "12px",
         }}>
-        <Link
-          to="/"
+        <button
+          onClick={() => scrollTo("home")}
           style={{
             color: "#db9834",
             fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
             fontWeight: 600,
-            textDecoration: "none",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            padding: 0,
           }}>
           DC
-        </Link>
+        </button>
 
         <div
           style={{
@@ -67,18 +66,16 @@ export default function Navbar() {
             gap: "clamp(16px, 3vw, 32px)",
             flexWrap: "wrap",
           }}>
-          <Link to="/" className="nav-link">
-            Home
-          </Link>
-          <Link to="/projects" className="nav-link">
-            Projects
-          </Link>
-          <Link to="/about" className="nav-link">
-            About
-          </Link>
-          <Link to="/contact" className="nav-link">
-            Contact
-          </Link>
+          {[
+            { label: "Home", id: "home" },
+            { label: "About", id: "about" },
+            { label: "Projects", id: "projects" },
+            { label: "Contact", id: "contact" },
+          ].map(({ label, id }) => (
+            <button key={id} onClick={() => scrollTo(id)} className="nav-link">
+              {label}
+            </button>
+          ))}
         </div>
       </nav>
     </>

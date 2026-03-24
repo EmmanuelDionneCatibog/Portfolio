@@ -1,11 +1,18 @@
-import { useEffect, useState } from "react";
-import NavBar from "../Components/NavBar";
+import { useEffect, useRef, useState } from "react";
 
 export default function AboutPage() {
+  const sectionRef = useRef(null);
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => setShow(true), 100);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setShow(true);
+      },
+      { threshold: 0.1 },
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    return () => observer.disconnect();
   }, []);
 
   const fadeUp = (delay = 0) => ({
@@ -36,9 +43,6 @@ export default function AboutPage() {
   return (
     <>
       <style>{`
-        html, body { scrollbar-width: none; -ms-overflow-style: none; }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-
         .skill-tag {
           display: inline-block;
           padding: 5px 13px;
@@ -56,7 +60,6 @@ export default function AboutPage() {
           border-color: rgba(219,152,52,0.7);
           color: #db9834;
         }
-
         .timeline-item {
           position: relative;
           padding-left: 24px;
@@ -75,7 +78,6 @@ export default function AboutPage() {
           border-left: 1px solid transparent;
           padding-bottom: 0;
         }
-
         .about-resume-btn {
           width: 100%; padding: 11px 0;
           background: transparent;
@@ -91,10 +93,8 @@ export default function AboutPage() {
           color: #25263a;
           border-color: #d7c6ac;
         }
-
         .about-social-link { opacity: 0.65; transition: opacity 0.2s; display: flex; }
         .about-social-link:hover { opacity: 1; }
-
         @media (max-width: 768px) {
           .about-grid { flex-direction: column !important; }
           .about-sidebar { width: 100% !important; }
@@ -102,29 +102,15 @@ export default function AboutPage() {
       `}</style>
 
       <div
+        ref={sectionRef}
         style={{
           fontFamily: "system-ui, sans-serif",
-          minHeight: "100vh",
           backgroundColor: "#25263a",
-          display: "flex",
-          flexDirection: "column",
-          paddingTop: "clamp(56px, 8vh, 72px)",
-          boxSizing: "border-box",
           color: "#d7c6ac",
+          padding: "clamp(60px, 8vh, 100px) clamp(24px, 8vw, 120px)",
+          boxSizing: "border-box",
         }}>
-        {/* ── NAVBAR ── */}
-        <NavBar />
-
-        {/* ── MAIN ── */}
-        <main
-          style={{
-            flex: 1,
-            padding: "clamp(40px, 6vh, 80px) clamp(24px, 8vw, 120px)",
-            maxWidth: "1200px",
-            width: "100%",
-            margin: "0 auto",
-            boxSizing: "border-box",
-          }}>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
           {/* Heading */}
           <div style={{ marginBottom: "56px", ...fadeUp(0) }}>
             <p
@@ -160,7 +146,7 @@ export default function AboutPage() {
               gap: "clamp(32px, 6vw, 80px)",
               alignItems: "flex-start",
             }}>
-            {/* LEFT — bio + education + currently */}
+            {/* LEFT */}
             <div style={{ flex: 1, minWidth: 0 }}>
               {/* Bio */}
               <div style={{ marginBottom: "48px", ...fadeUp(0.1) }}>
@@ -321,7 +307,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* RIGHT — profile card + skills + resume */}
+            {/* RIGHT */}
             <div
               className="about-sidebar"
               style={{ width: "300px", flexShrink: 0 }}>
@@ -417,7 +403,7 @@ export default function AboutPage() {
                   background: "#1c1c2c",
                   border: "1px solid rgba(219,152,52,0.2)",
                   borderRadius: "8px",
-                  padding: "22px 22px",
+                  padding: "22px",
                   marginBottom: "16px",
                   ...fadeIn(0.25),
                 }}>
@@ -479,7 +465,7 @@ export default function AboutPage() {
               </a>
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </>
   );
