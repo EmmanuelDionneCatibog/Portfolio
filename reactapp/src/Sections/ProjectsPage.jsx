@@ -134,6 +134,38 @@ export default function ProjectsPage() {
       new THREE.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 0.9 }),
     ];
 
+    // Plant materials
+    const potMat = new THREE.MeshStandardMaterial({
+      color: 0x8b4513,
+      roughness: 0.8,
+      metalness: 0.0,
+    });
+    const potRimMat = new THREE.MeshStandardMaterial({
+      color: 0x7a3d10,
+      roughness: 0.75,
+      metalness: 0.0,
+    });
+    const soilMat = new THREE.MeshStandardMaterial({
+      color: 0x2b1a0d,
+      roughness: 1.0,
+    });
+    const stemMat = new THREE.MeshStandardMaterial({
+      color: 0x2d5a1b,
+      roughness: 0.8,
+    });
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: 0x3a7d2c,
+      roughness: 0.85,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+    });
+    const leafDarkMat = new THREE.MeshStandardMaterial({
+      color: 0x2a5e1e,
+      roughness: 0.85,
+      metalness: 0.0,
+      side: THREE.DoubleSide,
+    });
+
     const box = (
       gw,
       gh,
@@ -301,14 +333,62 @@ export default function ProjectsPage() {
     lid.add(box(2.75, 0.008, 1.66, screenMat, 0, 0.063, 1.1));
 
     const paperDefs = [
-      { x: 2.4, z: -0.2, ry: 0.15, pw: 1.3, pd: 0.95 },
-      { x: 3.1, z: 0.5, ry: -0.3, pw: 1.2, pd: 0.9 },
-      { x: 2.0, z: 0.9, ry: 0.5, pw: 1.1, pd: 0.85 },
-      { x: 3.5, z: -0.7, ry: -0.1, pw: 1.4, pd: 1.0 },
-      { x: -3.0, z: 0.5, ry: -0.4, pw: 1.2, pd: 0.9 },
-      { x: -3.6, z: -0.2, ry: 0.2, pw: 1.1, pd: 0.95 },
+      // Left side - STACKED PAPERS
+      {
+        x: -3,
+        z: 0.2,
+        ry: Math.PI / 2 + 0.05,
+        pw: 1.35,
+        pd: 1.05,
+        yOffset: 0.012,
+      },
+      // Second paper (slightly rotated and offset)
+      {
+        x: -2.98,
+        z: 0.21,
+        ry: Math.PI / 2 + 0.12,
+        pw: 1.3,
+        pd: 1.0,
+        yOffset: 0.024,
+      },
+      // Third paper (more rotation)
+      {
+        x: -2.95,
+        z: 0.19,
+        ry: Math.PI / 2 - 0.08,
+        pw: 1.28,
+        pd: 0.98,
+        yOffset: 0.036,
+      },
+      // Top paper (most rotated, smaller)
+      {
+        x: -2.92,
+        z: 0.22,
+        ry: Math.PI / 2 + 0.22,
+        pw: 1.25,
+        pd: 0.95,
+        yOffset: 0.048,
+      },
+
+      // Right side papers (only 2 pieces, separate from stack)
+      {
+        x: 2.4,
+        z: -0.2,
+        ry: Math.PI / 2 + 0.15,
+        pw: 1.2,
+        pd: 0.9,
+        yOffset: 0.012,
+      },
+      {
+        x: 3.1,
+        z: 0.6,
+        ry: Math.PI / 2 - 0.3,
+        pw: 1.3,
+        pd: 0.95,
+        yOffset: 0.012,
+      },
     ];
-    paperDefs.forEach(({ x, z, ry, pw, pd }, i) => {
+    paperDefs.forEach(({ x, z, ry, pw, pd, yOffset }, i) => {
       scene.add(
         box(
           pw,
@@ -316,7 +396,7 @@ export default function ProjectsPage() {
           pd,
           paperMats[i % paperMats.length],
           x,
-          DESK_Y + 0.012,
+          DESK_Y + yOffset,
           z,
           0,
           ry,
@@ -325,41 +405,542 @@ export default function ProjectsPage() {
       );
     });
 
-    // ── LAMP — head tilted further down ──
     const lamp = new THREE.Group();
-    lamp.position.set(3.6, DESK_Y, 0.2);
+    lamp.position.set(3.6, DESK_Y, -0.4);
     scene.add(lamp);
-    lamp.add(cyl(0.3, 0.38, 0.07, 24, lampBaseMat, 0, 0.035, 0));
+
+    // Lamp base
+    lamp.add(cyl(0.3, 0.45, 0.07, 24, lampBaseMat, 0, 0.035, 0));
     lamp.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 0.11, 0));
+
+    // Lower arm
     const lowerArm = new THREE.Group();
     lowerArm.position.set(0, 0.17, 0);
-    lowerArm.rotation.z = -0.22;
+    lowerArm.rotation.z = -0.55;
     lamp.add(lowerArm);
-    lowerArm.add(cyl(0.036, 0.036, 1.5, 10, lampArmMat, 0, 0.75, 0));
+
+    const lowerArmCyl = cyl(0.036, 0.036, 1.5, 10, lampArmMat, 0, 0.75, 0);
+    lowerArm.add(lowerArmCyl);
     lowerArm.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 1.5, 0));
+
+    // Upper arm
     const upperArm = new THREE.Group();
     upperArm.position.set(0, 1.5, 0);
-    upperArm.rotation.z = 0.44;
+    upperArm.rotation.z = 1.1;
     lowerArm.add(upperArm);
-    upperArm.add(cyl(0.032, 0.032, 1.2, 10, lampArmMat, 0, 0.6, 0));
+
+    const upperArmCyl = cyl(0.032, 0.032, 1.2, 10, lampArmMat, 0, 0.6, 0);
+    upperArm.add(upperArmCyl);
+
+    // Head
     const head = new THREE.Group();
-    head.position.set(0, 1.2, 0);
-    // Increased z rotation to tilt head further down toward desk
-    head.rotation.z = 1.85;
+    head.position.set(-0.3, 1.2, 0);
+    head.rotation.z = 1.4;
     upperArm.add(head);
+
+    // Cone lamp shade
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(0.34, 0.44, 24, 1, true),
       lampConeMat,
     );
-    cone.rotation.z = Math.PI;
+    cone.rotation.x = Math.PI;
     cone.castShadow = true;
+    cone.position.y = -0.22;
     head.add(cone);
+
+    // Bulb
     const bulb = new THREE.Mesh(
       new THREE.SphereGeometry(0.09, 16, 16),
       bulbMat,
     );
     bulb.position.y = -0.18;
     head.add(bulb);
+
+    // Connector piece
+    const connector = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15, 0.15, 0.15, 8),
+      lampArmMat,
+    );
+    connector.position.y = -0.35;
+    head.add(connector);
+
+    // PLANT - More leafy with branches
+    const plant = new THREE.Group();
+    plant.position.set(-2.7, DESK_Y, -1);
+    scene.add(plant);
+
+    // Pot body
+    const potBody = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.28, 0.2, 0.45, 20),
+      potMat,
+    );
+    potBody.position.y = 0.225;
+    potBody.castShadow = true;
+    potBody.receiveShadow = true;
+    plant.add(potBody);
+
+    // Pot rim
+    const potRim = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.31, 0.28, 0.06, 20),
+      potRimMat,
+    );
+    potRim.position.y = 0.45 + 0.03;
+    potRim.castShadow = true;
+    plant.add(potRim);
+
+    // Soil surface
+    const soil = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.27, 0.27, 0.04, 20),
+      soilMat,
+    );
+    soil.position.y = 0.47;
+    plant.add(soil);
+
+    // Main stem (taller and thicker)
+    const mainStem = cyl(0.04, 0.045, 0.75, 12, stemMat, 0, 0.85, 0);
+    plant.add(mainStem);
+
+    // Branch creation helper
+    const makeBranch = (
+      px,
+      py,
+      pz,
+      angle,
+      length,
+      thickness,
+      rotationAxis = "x",
+    ) => {
+      const branchGroup = new THREE.Group();
+      branchGroup.position.set(px, py, pz);
+
+      const branchCyl = cyl(
+        thickness,
+        thickness,
+        length,
+        8,
+        stemMat,
+        0,
+        length / 2,
+        0,
+      );
+
+      if (rotationAxis === "x") {
+        branchGroup.rotation.x = angle;
+      } else if (rotationAxis === "z") {
+        branchGroup.rotation.z = angle;
+      } else if (rotationAxis === "y") {
+        branchGroup.rotation.y = angle;
+      }
+
+      branchGroup.add(branchCyl);
+      plant.add(branchGroup);
+      return branchGroup;
+    };
+
+    // Main branches extending from the stem
+    const branchPoints = [
+      { y: 0.65, angle: -0.4, length: 0.28, thickness: 0.022, axis: "x" }, // lower left
+      { y: 0.65, angle: 0.4, length: 0.28, thickness: 0.022, axis: "x" }, // lower right
+      { y: 0.85, angle: -0.5, length: 0.35, thickness: 0.025, axis: "x" }, // middle left
+      { y: 0.85, angle: 0.5, length: 0.35, thickness: 0.025, axis: "x" }, // middle right
+      { y: 1.05, angle: -0.45, length: 0.4, thickness: 0.028, axis: "x" }, // upper left
+      { y: 1.05, angle: 0.45, length: 0.4, thickness: 0.028, axis: "x" }, // upper right
+      { y: 1.2, angle: 0, length: 0.32, thickness: 0.03, axis: "x" }, // top front
+      { y: 1.2, angle: Math.PI, length: 0.32, thickness: 0.03, axis: "x" }, // top back
+    ];
+
+    branchPoints.forEach((point) => {
+      makeBranch(
+        0,
+        point.y,
+        0,
+        point.angle,
+        point.length,
+        point.thickness,
+        point.axis,
+      );
+    });
+
+    // Enhanced leaf creation with more variety
+    const makeLeafDetailed = (
+      mat,
+      px,
+      py,
+      pz,
+      rx,
+      ry,
+      rz,
+      sx = 1,
+      sy = 1,
+      sz = 1,
+      isBranchTip = false,
+    ) => {
+      const geo = new THREE.SphereGeometry(0.22, 12, 8);
+      const m = new THREE.Mesh(geo, mat);
+      m.scale.set(sx, sy, sz);
+      m.position.set(px, py, pz);
+      m.rotation.set(rx, ry, rz);
+      m.castShadow = true;
+      plant.add(m);
+
+      // Add small stem connection if it's a branch tip leaf
+      if (isBranchTip) {
+        const connector = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.012, 0.015, 0.08, 6),
+          stemMat,
+        );
+        connector.position.set(px * 0.7, py - 0.05, pz * 0.7);
+        connector.rotation.set(rx * 0.5, ry, rz * 0.5);
+        connector.castShadow = true;
+        plant.add(connector);
+      }
+    };
+
+    // Central top cluster (dense foliage)
+    const stemTop = 1.28;
+    makeLeafDetailed(
+      leafMat,
+      0,
+      stemTop + 0.15,
+      0.12,
+      -0.3,
+      0,
+      0,
+      0.65,
+      0.22,
+      1.1,
+      true,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0.12,
+      stemTop + 0.12,
+      -0.08,
+      -0.25,
+      0.4,
+      0.15,
+      0.62,
+      0.21,
+      1.05,
+      true,
+    );
+    makeLeafDetailed(
+      leafMat,
+      -0.12,
+      stemTop + 0.12,
+      -0.08,
+      -0.25,
+      -0.4,
+      -0.15,
+      0.62,
+      0.21,
+      1.05,
+      true,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0.08,
+      stemTop + 0.1,
+      -0.15,
+      -0.2,
+      0.7,
+      0.1,
+      0.58,
+      0.2,
+      1.0,
+      true,
+    );
+    makeLeafDetailed(
+      leafMat,
+      -0.08,
+      stemTop + 0.1,
+      -0.15,
+      -0.2,
+      -0.7,
+      -0.1,
+      0.58,
+      0.2,
+      1.0,
+      true,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0,
+      stemTop + 0.08,
+      -0.2,
+      -0.15,
+      Math.PI,
+      0,
+      0.6,
+      0.19,
+      1.02,
+      true,
+    );
+
+    // Left side branch leaves
+    makeLeafDetailed(
+      leafMat,
+      -0.28,
+      1.05,
+      0.05,
+      -0.35,
+      -0.3,
+      -0.2,
+      0.58,
+      0.2,
+      0.95,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      -0.32,
+      1.02,
+      -0.08,
+      -0.3,
+      -0.5,
+      -0.3,
+      0.55,
+      0.19,
+      0.92,
+    );
+    makeLeafDetailed(
+      leafMat,
+      -0.35,
+      0.98,
+      0.12,
+      -0.4,
+      -0.2,
+      -0.1,
+      0.52,
+      0.18,
+      0.88,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      -0.38,
+      0.85,
+      0.02,
+      -0.45,
+      -0.4,
+      -0.25,
+      0.5,
+      0.17,
+      0.85,
+    );
+    makeLeafDetailed(
+      leafMat,
+      -0.3,
+      0.82,
+      -0.12,
+      -0.4,
+      -0.6,
+      -0.35,
+      0.53,
+      0.18,
+      0.9,
+    );
+
+    // Right side branch leaves
+    makeLeafDetailed(
+      leafDarkMat,
+      0.28,
+      1.05,
+      0.05,
+      -0.35,
+      0.3,
+      0.2,
+      0.58,
+      0.2,
+      0.95,
+    );
+    makeLeafDetailed(
+      leafMat,
+      0.32,
+      1.02,
+      -0.08,
+      -0.3,
+      0.5,
+      0.3,
+      0.55,
+      0.19,
+      0.92,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0.35,
+      0.98,
+      0.12,
+      -0.4,
+      0.2,
+      0.1,
+      0.52,
+      0.18,
+      0.88,
+    );
+    makeLeafDetailed(
+      leafMat,
+      0.38,
+      0.85,
+      0.02,
+      -0.45,
+      0.4,
+      0.25,
+      0.5,
+      0.17,
+      0.85,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0.3,
+      0.82,
+      -0.12,
+      -0.4,
+      0.6,
+      0.35,
+      0.53,
+      0.18,
+      0.9,
+    );
+
+    // Lower branch leaves (drooping)
+    makeLeafDetailed(
+      leafMat,
+      -0.25,
+      0.68,
+      0.18,
+      0.2,
+      -0.5,
+      -0.4,
+      0.48,
+      0.16,
+      0.82,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      -0.22,
+      0.65,
+      -0.15,
+      0.25,
+      -0.7,
+      -0.5,
+      0.46,
+      0.15,
+      0.8,
+    );
+    makeLeafDetailed(
+      leafMat,
+      0.25,
+      0.68,
+      0.18,
+      0.2,
+      0.5,
+      0.4,
+      0.48,
+      0.16,
+      0.82,
+    );
+    makeLeafDetailed(
+      leafDarkMat,
+      0.22,
+      0.65,
+      -0.15,
+      0.25,
+      0.7,
+      0.5,
+      0.46,
+      0.15,
+      0.8,
+    );
+
+    // Additional smaller leaves for extra fullness
+    const extraLeaves = [
+      {
+        mat: leafMat,
+        px: -0.18,
+        py: 1.12,
+        pz: 0.22,
+        rx: -0.2,
+        ry: -0.8,
+        rz: -0.1,
+        sx: 0.45,
+        sy: 0.14,
+        sz: 0.78,
+      },
+      {
+        mat: leafDarkMat,
+        px: 0.18,
+        py: 1.12,
+        pz: 0.22,
+        rx: -0.2,
+        ry: 0.8,
+        rz: 0.1,
+        sx: 0.45,
+        sy: 0.14,
+        sz: 0.78,
+      },
+      {
+        mat: leafMat,
+        px: -0.15,
+        py: 0.95,
+        pz: 0.28,
+        rx: -0.15,
+        ry: -0.6,
+        rz: -0.2,
+        sx: 0.42,
+        sy: 0.13,
+        sz: 0.72,
+      },
+      {
+        mat: leafDarkMat,
+        px: 0.15,
+        py: 0.95,
+        pz: 0.28,
+        rx: -0.15,
+        ry: 0.6,
+        rz: 0.2,
+        sx: 0.42,
+        sy: 0.13,
+        sz: 0.72,
+      },
+      {
+        mat: leafMat,
+        px: -0.2,
+        py: 1.18,
+        pz: -0.05,
+        rx: -0.28,
+        ry: -0.4,
+        rz: -0.05,
+        sx: 0.5,
+        sy: 0.17,
+        sz: 0.85,
+      },
+      {
+        mat: leafDarkMat,
+        px: 0.2,
+        py: 1.18,
+        pz: -0.05,
+        rx: -0.28,
+        ry: 0.4,
+        rz: 0.05,
+        sx: 0.5,
+        sy: 0.17,
+        sz: 0.85,
+      },
+    ];
+
+    extraLeaves.forEach((leaf) => {
+      makeLeafDetailed(
+        leaf.mat,
+        leaf.px,
+        leaf.py,
+        leaf.pz,
+        leaf.rx,
+        leaf.ry,
+        leaf.rz,
+        leaf.sx,
+        leaf.sy,
+        leaf.sz,
+      );
+    });
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     const overhead = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -406,13 +987,16 @@ export default function ProjectsPage() {
       wallW = 24,
       wallD = 20;
 
+    // BACK WALL
+    const backWallZ = -2.1;
     const backWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallW, wallH),
       wallMat,
     );
-    backWall.position.set(0, floorY + wallH / 2, -wallD / 2);
+    backWall.position.set(0, floorY + wallH / 2, backWallZ);
     backWall.receiveShadow = true;
     scene.add(backWall);
+
     const leftWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallD, wallH),
       wallMat,
@@ -421,6 +1005,7 @@ export default function ProjectsPage() {
     leftWall.position.set(-wallW / 2, floorY + wallH / 2, 0);
     leftWall.receiveShadow = true;
     scene.add(leftWall);
+
     const rightWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallD, wallH),
       wallMat,
@@ -440,7 +1025,8 @@ export default function ProjectsPage() {
       m.position.set(px, py, pz);
       scene.add(m);
     };
-    const bwZ = -wallD / 2 + 0.02;
+    // Back wall grid
+    const bwZ = backWallZ + 0.02;
     for (let i = 0; i < 5; i++)
       wallLine(wallW, 0.025, 0.01, 0, floorY + 1.5 + i * 1.6, bwZ);
     for (let i = -4; i <= 4; i++)
@@ -486,8 +1072,6 @@ export default function ProjectsPage() {
     let targetProgress = 0;
     let scrollProgress = 0;
     let glitchTriggered = false;
-
-    // Whether the section is fully in view (page scrolled to it)
     let sectionActive = false;
 
     const syncTargetRef = (v) => {
@@ -535,7 +1119,6 @@ export default function ProjectsPage() {
       }
     };
 
-    // ── INTERSECTION OBSERVER — only allow zoom when section fully in view ──
     const observer = new IntersectionObserver(
       ([entry]) => {
         sectionActive = entry.intersectionRatio >= 0.98;
@@ -548,11 +1131,8 @@ export default function ProjectsPage() {
       if (isRestoringRef.current) return;
       const scrollingDown = e.deltaY > 0;
       const scrollingUp = e.deltaY < 0;
-      // At top edge scrolling up — pass through to page
       if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
-      // At bottom edge (animation done) — pass through in both directions
       if (targetProgress >= 1 && scrollProgress > 0.98) return;
-      // Section not fully in view yet — don't intercept, let page scroll
       if (!sectionActive && targetProgress <= 0) return;
       e.preventDefault();
       const delta = scrollingDown ? 0.35 : -0.35;
