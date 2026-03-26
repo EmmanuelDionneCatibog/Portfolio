@@ -12,7 +12,7 @@ export default function ProjectsPage() {
   const isRestoringRef = useRef(false);
   const resetProgressRef = useRef(null);
   const zoomingOutRef = useRef(false);
-  const targetProgressRef = useRef(0); // mirrors targetProgress inside effect
+  const targetProgressRef = useRef(0);
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
@@ -30,7 +30,6 @@ export default function ProjectsPage() {
     setShowDesktop(true);
   };
 
-  // Instant back (unused externally but kept for completeness)
   const handleBack = () => {
     isRestoringRef.current = true;
     setShowDesktop(false);
@@ -41,7 +40,6 @@ export default function ProjectsPage() {
     }, 300);
   };
 
-  // Sign out: hide desktop, then animate camera zooming back out to overview
   const handleSignOut = () => {
     setShowDesktop(false);
     glitchFiredRef.current = false;
@@ -70,7 +68,6 @@ export default function ProjectsPage() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
 
-    // ── MATERIALS ──
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x1a1a2a,
       roughness: 0.3,
@@ -137,7 +134,6 @@ export default function ProjectsPage() {
       new THREE.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 0.9 }),
     ];
 
-    // ── HELPERS ──
     const box = (
       gw,
       gh,
@@ -183,7 +179,6 @@ export default function ProjectsPage() {
 
     const DESK_Y = 0;
 
-    // ── DESK ──
     const desk = new THREE.Group();
     scene.add(desk);
     desk.add(box(9, 0.18, 4, deskMat, 0, DESK_Y - 0.09, 0));
@@ -196,11 +191,9 @@ export default function ProjectsPage() {
       desk.add(box(0.2, 2.8, 0.2, deskLegMat, x, DESK_Y - 0.09 - 1.4, z));
     });
 
-    // ── LAPTOP ──
     const laptop = new THREE.Group();
     laptop.position.set(0, DESK_Y + 0.05, 0);
     scene.add(laptop);
-
     const base = new THREE.Group();
     laptop.add(base);
     base.add(box(3.4, 0.1, 2.2, bodyMat));
@@ -307,7 +300,6 @@ export default function ProjectsPage() {
     );
     lid.add(box(2.75, 0.008, 1.66, screenMat, 0, 0.063, 1.1));
 
-    // ── PAPERS ──
     const paperDefs = [
       { x: 2.4, z: -0.2, ry: 0.15, pw: 1.3, pd: 0.95 },
       { x: 3.1, z: 0.5, ry: -0.3, pw: 1.2, pd: 0.9 },
@@ -333,7 +325,7 @@ export default function ProjectsPage() {
       );
     });
 
-    // ── LAMP ──
+    // ── LAMP — head tilted further down ──
     const lamp = new THREE.Group();
     lamp.position.set(3.6, DESK_Y, 0.2);
     scene.add(lamp);
@@ -352,7 +344,8 @@ export default function ProjectsPage() {
     upperArm.add(cyl(0.032, 0.032, 1.2, 10, lampArmMat, 0, 0.6, 0));
     const head = new THREE.Group();
     head.position.set(0, 1.2, 0);
-    head.rotation.z = 1.15;
+    // Increased z rotation to tilt head further down toward desk
+    head.rotation.z = 1.85;
     upperArm.add(head);
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(0.34, 0.44, 24, 1, true),
@@ -368,7 +361,6 @@ export default function ProjectsPage() {
     bulb.position.y = -0.18;
     head.add(bulb);
 
-    // ── LIGHTS ──
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     const overhead = new THREE.DirectionalLight(0xffffff, 1.1);
     overhead.position.set(0, 8, 4);
@@ -395,7 +387,6 @@ export default function ProjectsPage() {
     scene.add(lampLight);
     scene.add(lampLight.target);
 
-    // ── FLOOR ──
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(30, 30),
       new THREE.MeshStandardMaterial({ color: 0x1a1a28, roughness: 1 }),
@@ -405,18 +396,16 @@ export default function ProjectsPage() {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    // ── ROOM WALLS ──
     const wallMat = new THREE.MeshStandardMaterial({
       color: 0x1c1c2c,
       roughness: 1,
       metalness: 0,
     });
     const floorY = DESK_Y - 0.09 - 2.8;
-    const wallH = 10;
-    const wallW = 24;
-    const wallD = 20;
+    const wallH = 10,
+      wallW = 24,
+      wallD = 20;
 
-    // Back wall
     const backWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallW, wallH),
       wallMat,
@@ -424,8 +413,6 @@ export default function ProjectsPage() {
     backWall.position.set(0, floorY + wallH / 2, -wallD / 2);
     backWall.receiveShadow = true;
     scene.add(backWall);
-
-    // Left wall
     const leftWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallD, wallH),
       wallMat,
@@ -434,8 +421,6 @@ export default function ProjectsPage() {
     leftWall.position.set(-wallW / 2, floorY + wallH / 2, 0);
     leftWall.receiveShadow = true;
     scene.add(leftWall);
-
-    // Right wall
     const rightWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallD, wallH),
       wallMat,
@@ -445,103 +430,66 @@ export default function ProjectsPage() {
     rightWall.receiveShadow = true;
     scene.add(rightWall);
 
-    // ── ORANGE WALL LINES (grid lines drawn as thin boxes) ──
-    const lineMat = new THREE.MeshBasicMaterial({ color: 0xdb9834 });
-    const lineOpacity = 0.28;
     const fadedLineMat = new THREE.MeshBasicMaterial({
       color: 0xdb9834,
       transparent: true,
-      opacity: lineOpacity,
+      opacity: 0.28,
     });
-
-    // Helper: thin horizontal line on a wall
-    const wallLine = (w, h, d, px, py, pz, ry = 0) => {
+    const wallLine = (w, h, d, px, py, pz) => {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fadedLineMat);
       m.position.set(px, py, pz);
-      m.rotation.y = ry;
       scene.add(m);
     };
-
-    // Back wall — horizontal lines
     const bwZ = -wallD / 2 + 0.02;
-    for (let i = 0; i < 5; i++) {
-      const ly = floorY + 1.5 + i * 1.6;
-      wallLine(wallW, 0.025, 0.01, 0, ly, bwZ);
-    }
-    // Back wall — vertical lines
-    for (let i = -4; i <= 4; i++) {
+    for (let i = 0; i < 5; i++)
+      wallLine(wallW, 0.025, 0.01, 0, floorY + 1.5 + i * 1.6, bwZ);
+    for (let i = -4; i <= 4; i++)
       wallLine(0.025, wallH, 0.01, i * 2.5, floorY + wallH / 2, bwZ);
-    }
-
-    // Left wall — horizontal lines (angled in perspective, just flat planes)
     const lwX = -wallW / 2 + 0.02;
-    for (let i = 0; i < 5; i++) {
-      const ly = floorY + 1.5 + i * 1.6;
-      wallLine(0.01, 0.025, wallD, lwX, ly, 0);
-    }
-    // Left wall — vertical lines
-    for (let i = -3; i <= 3; i++) {
+    for (let i = 0; i < 5; i++)
+      wallLine(0.01, 0.025, wallD, lwX, floorY + 1.5 + i * 1.6, 0);
+    for (let i = -3; i <= 3; i++)
       wallLine(0.01, wallH, 0.025, lwX, floorY + wallH / 2, i * 2.8);
-    }
-
-    // Right wall — horizontal lines
     const rwX = wallW / 2 - 0.02;
-    for (let i = 0; i < 5; i++) {
-      const ly = floorY + 1.5 + i * 1.6;
-      wallLine(0.01, 0.025, wallD, rwX, ly, 0);
-    }
-    // Right wall — vertical lines
-    for (let i = -3; i <= 3; i++) {
+    for (let i = 0; i < 5; i++)
+      wallLine(0.01, 0.025, wallD, rwX, floorY + 1.5 + i * 1.6, 0);
+    for (let i = -3; i <= 3; i++)
       wallLine(0.01, wallH, 0.025, rwX, floorY + wallH / 2, i * 2.8);
-    }
 
-    // ── FLOOR GRID LINES ──
-    // Match wall vertical spacing: lines at x = i*2.5 (back wall verticals)
-    // Match wall depth spacing:    lines at z = i*2.8 (side wall verticals)
     const floorGridMat = new THREE.MeshBasicMaterial({
       color: 0xdb9834,
       transparent: true,
       opacity: 0.12,
     });
-
-    // Lines running left-right (X axis) at each z position matching side wall vertical spacing
-    // Side wall verticals are at z = i*2.8 for i in [-3..3]
-    // Extend from -wallW/2 to +wallW/2 to match back wall width
     for (let i = -3; i <= 3; i++) {
-      const lz = i * 2.8;
       const m = new THREE.Mesh(
         new THREE.BoxGeometry(wallW, 0.01, 0.025),
         floorGridMat,
       );
-      m.position.set(0, floorY + 0.005, lz);
+      m.position.set(0, floorY + 0.005, i * 2.8);
       scene.add(m);
     }
-
-    // Lines running front-back (Z axis) at each x position matching back wall vertical spacing
-    // Back wall verticals are at x = i*2.5 for i in [-4..4]
-    // Extend from back wall (z = -wallD/2) to camera near (z = wallD/2)
     for (let i = -4; i <= 4; i++) {
-      const lx = i * 2.5;
       const m = new THREE.Mesh(
         new THREE.BoxGeometry(0.025, 0.01, wallD),
         floorGridMat,
       );
-      m.position.set(lx, floorY + 0.005, 0);
+      m.position.set(i * 2.5, floorY + 0.005, 0);
       scene.add(m);
     }
 
-    // ── CAMERA WAYPOINTS ──
     const camStart = new THREE.Vector3(0, 3.2, 8);
     const camEnd = new THREE.Vector3(0, 1.52, 0.35);
     const lookStart = new THREE.Vector3(0, 0.2, 0);
     const lookEnd = new THREE.Vector3(0, 1.52, -1.5);
 
-    // ── VIRTUAL SCROLL STATE ──
     let targetProgress = 0;
     let scrollProgress = 0;
     let glitchTriggered = false;
 
-    // Keep ref in sync so handleSignOut can seed the correct starting value
+    // Whether the section is fully in view (page scrolled to it)
+    let sectionActive = false;
+
     const syncTargetRef = (v) => {
       targetProgress = v;
       targetProgressRef.current = v;
@@ -553,17 +501,13 @@ export default function ProjectsPage() {
       glitchTriggered = false;
     };
 
-    // Drives reverse zoom (sign out animation)
     const checkZoomOut = () => {
       if (!zoomingOutRef.current) return;
-      // On first frame, seed from ref so we start at the correct progress (not 0)
       if (targetProgress < targetProgressRef.current) {
         targetProgress = targetProgressRef.current;
         scrollProgress = targetProgressRef.current;
       }
-      // Decrease target — scrollProgress will lerp toward it smoothly in animate loop
       syncTargetRef(Math.max(0, targetProgress - 0.022));
-      // Only clean up once scrollProgress has actually eased close to 0
       if (targetProgress <= 0 && scrollProgress < 0.01) {
         syncTargetRef(0);
         scrollProgress = 0;
@@ -586,21 +530,30 @@ export default function ProjectsPage() {
       );
       if (p >= 0.99 && !glitchTriggered) {
         glitchTriggered = true;
-        syncTargetRef(1); // make sure ref is at 1 before sign-out zoom
+        syncTargetRef(1);
         triggerGlitch();
       }
     };
 
-    // ── INPUT HANDLERS ──
+    // ── INTERSECTION OBSERVER — only allow zoom when section fully in view ──
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        sectionActive = entry.intersectionRatio >= 0.98;
+      },
+      { threshold: 0.98 },
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
     const onWheel = (e) => {
       if (isRestoringRef.current) return;
       const scrollingDown = e.deltaY > 0;
       const scrollingUp = e.deltaY < 0;
-      // At the top edge scrolling up — let page scroll to previous section
+      // At top edge scrolling up — pass through to page
       if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
-      // At the bottom edge (animation complete) — let page scroll in both directions
+      // At bottom edge (animation done) — pass through in both directions
       if (targetProgress >= 1 && scrollProgress > 0.98) return;
-      // Otherwise consume the event for the 3D animation
+      // Section not fully in view yet — don't intercept, let page scroll
+      if (!sectionActive && targetProgress <= 0) return;
       e.preventDefault();
       const delta = scrollingDown ? 0.35 : -0.35;
       syncTargetRef(Math.max(0, Math.min(1, targetProgress + delta)));
@@ -615,10 +568,9 @@ export default function ProjectsPage() {
       if (isRestoringRef.current) return;
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
-      const scrollingDown = dy > 0;
-      const scrollingUp = dy < 0;
-      if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
-      if (scrollingDown && targetProgress >= 1) return;
+      if (dy < 0 && targetProgress <= 0 && scrollProgress < 0.02) return;
+      if (dy > 0 && targetProgress >= 1) return;
+      if (!sectionActive && targetProgress <= 0) return;
       e.preventDefault();
       syncTargetRef(
         Math.max(
@@ -639,7 +591,6 @@ export default function ProjectsPage() {
     };
     window.addEventListener("resize", onResize);
 
-    // ── ANIMATE ──
     let raf,
       t = 0;
     const animate = () => {
@@ -660,6 +611,7 @@ export default function ProjectsPage() {
 
     return () => {
       cancelAnimationFrame(raf);
+      observer.disconnect();
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
