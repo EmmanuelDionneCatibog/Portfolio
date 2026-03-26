@@ -12,7 +12,7 @@ export default function ProjectsPage() {
   const isRestoringRef = useRef(false);
   const resetProgressRef = useRef(null);
   const zoomingOutRef = useRef(false);
-  const targetProgressRef = useRef(0);
+  const targetProgressRef = useRef(0); // mirrors targetProgress inside effect
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
@@ -190,8 +190,8 @@ export default function ProjectsPage() {
     [
       [-4.3, -1.5],
       [4.3, -1.5],
-      [-4.3, 0.8],
-      [4.3, 0.8],
+      [-4.3, 1.5],
+      [4.3, 1.5],
     ].forEach(([x, z]) => {
       desk.add(box(0.2, 2.8, 0.2, deskLegMat, x, DESK_Y - 0.09 - 1.4, z));
     });
@@ -445,7 +445,7 @@ export default function ProjectsPage() {
     rightWall.receiveShadow = true;
     scene.add(rightWall);
 
-    // ── ORANGE WALL LINES ──
+    // ── ORANGE WALL LINES (grid lines drawn as thin boxes) ──
     const lineMat = new THREE.MeshBasicMaterial({ color: 0xdb9834 });
     const lineOpacity = 0.28;
     const fadedLineMat = new THREE.MeshBasicMaterial({
@@ -496,12 +496,17 @@ export default function ProjectsPage() {
     }
 
     // ── FLOOR GRID LINES ──
+    // Match wall vertical spacing: lines at x = i*2.5 (back wall verticals)
+    // Match wall depth spacing:    lines at z = i*2.8 (side wall verticals)
     const floorGridMat = new THREE.MeshBasicMaterial({
       color: 0xdb9834,
       transparent: true,
-      opacity: 0.24,
+      opacity: 0.12,
     });
 
+    // Lines running left-right (X axis) at each z position matching side wall vertical spacing
+    // Side wall verticals are at z = i*2.8 for i in [-3..3]
+    // Extend from -wallW/2 to +wallW/2 to match back wall width
     for (let i = -3; i <= 3; i++) {
       const lz = i * 2.8;
       const m = new THREE.Mesh(
@@ -512,6 +517,9 @@ export default function ProjectsPage() {
       scene.add(m);
     }
 
+    // Lines running front-back (Z axis) at each x position matching back wall vertical spacing
+    // Back wall verticals are at x = i*2.5 for i in [-4..4]
+    // Extend from back wall (z = -wallD/2) to camera near (z = wallD/2)
     for (let i = -4; i <= 4; i++) {
       const lx = i * 2.5;
       const m = new THREE.Mesh(
@@ -586,8 +594,15 @@ export default function ProjectsPage() {
     // ── INPUT HANDLERS ──
     const onWheel = (e) => {
       if (isRestoringRef.current) return;
+      const scrollingDown = e.deltaY > 0;
+      const scrollingUp = e.deltaY < 0;
+      // At the top edge scrolling up — let page scroll to previous section
+      if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
+      // At the bottom edge (animation complete) — let page scroll in both directions
+      if (targetProgress >= 1 && scrollProgress > 0.98) return;
+      // Otherwise consume the event for the 3D animation
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.35 : -0.35;
+      const delta = scrollingDown ? 0.35 : -0.35;
       syncTargetRef(Math.max(0, Math.min(1, targetProgress + delta)));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -598,9 +613,13 @@ export default function ProjectsPage() {
     };
     const onTouchMove = (e) => {
       if (isRestoringRef.current) return;
-      e.preventDefault();
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
+      const scrollingDown = dy > 0;
+      const scrollingUp = dy < 0;
+      if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
+      if (scrollingDown && targetProgress >= 1) return;
+      e.preventDefault();
       syncTargetRef(
         Math.max(
           0,

@@ -418,7 +418,7 @@ export default function WindowsDesktop({ visible, onBack, onSignOut }) {
                   onMouseLeave={(e) =>
                     (e.currentTarget.style.background = "transparent")
                   }>
-                  <span>{["📄", "📁", "⚙️", "🚪"][i]}</span> {item}
+                  {item}
                 </div>
               ),
             )}
