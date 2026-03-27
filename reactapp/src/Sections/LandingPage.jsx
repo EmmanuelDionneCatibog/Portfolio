@@ -16,7 +16,7 @@ export default function LandingPage() {
         fontFamily: "system-ui, sans-serif",
         height: "100vh",
         width: "100%",
-        backgroundColor: "#25263a",
+        backgroundColor: "#13131c",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
