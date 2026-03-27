@@ -68,6 +68,7 @@ export default function ProjectsPage() {
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     el.appendChild(renderer.domElement);
 
+    // ─── Materials ───────────────────────────────────────────────────────────
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x1a1a2a,
       roughness: 0.3,
@@ -133,8 +134,6 @@ export default function ProjectsPage() {
       new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.9 }),
       new THREE.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 0.9 }),
     ];
-
-    // Plant materials
     const potMat = new THREE.MeshStandardMaterial({
       color: 0x8b4513,
       roughness: 0.8,
@@ -166,6 +165,7 @@ export default function ProjectsPage() {
       side: THREE.DoubleSide,
     });
 
+    // ─── Helpers ─────────────────────────────────────────────────────────────
     const box = (
       gw,
       gh,
@@ -211,6 +211,7 @@ export default function ProjectsPage() {
 
     const DESK_Y = 0;
 
+    // ─── Desk ────────────────────────────────────────────────────────────────
     const desk = new THREE.Group();
     scene.add(desk);
     desk.add(box(9, 0.18, 4, deskMat, 0, DESK_Y - 0.09, 0));
@@ -223,6 +224,7 @@ export default function ProjectsPage() {
       desk.add(box(0.2, 2.8, 0.2, deskLegMat, x, DESK_Y - 0.09 - 1.4, z));
     });
 
+    // ─── Laptop ──────────────────────────────────────────────────────────────
     const laptop = new THREE.Group();
     laptop.position.set(0, DESK_Y + 0.05, 0);
     scene.add(laptop);
@@ -332,8 +334,8 @@ export default function ProjectsPage() {
     );
     lid.add(box(2.75, 0.008, 1.66, screenMat, 0, 0.063, 1.1));
 
+    // ─── Papers ──────────────────────────────────────────────────────────────
     const paperDefs = [
-      // Left side - STACKED PAPERS
       {
         x: -3,
         z: 0.2,
@@ -342,7 +344,6 @@ export default function ProjectsPage() {
         pd: 1.05,
         yOffset: 0.012,
       },
-      // Second paper (slightly rotated and offset)
       {
         x: -2.98,
         z: 0.21,
@@ -351,7 +352,6 @@ export default function ProjectsPage() {
         pd: 1.0,
         yOffset: 0.024,
       },
-      // Third paper (more rotation)
       {
         x: -2.95,
         z: 0.19,
@@ -360,7 +360,6 @@ export default function ProjectsPage() {
         pd: 0.98,
         yOffset: 0.036,
       },
-      // Top paper (most rotated, smaller)
       {
         x: -2.92,
         z: 0.22,
@@ -369,8 +368,6 @@ export default function ProjectsPage() {
         pd: 0.95,
         yOffset: 0.048,
       },
-
-      // Right side papers (only 2 pieces, separate from stack)
       {
         x: 2.4,
         z: -0.2,
@@ -405,40 +402,31 @@ export default function ProjectsPage() {
       );
     });
 
+    // ─── Lamp ────────────────────────────────────────────────────────────────
     const lamp = new THREE.Group();
     lamp.position.set(3.6, DESK_Y, -0.4);
     scene.add(lamp);
-
-    // Lamp base
     lamp.add(cyl(0.3, 0.45, 0.07, 24, lampBaseMat, 0, 0.035, 0));
     lamp.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 0.11, 0));
 
-    // Lower arm
     const lowerArm = new THREE.Group();
     lowerArm.position.set(0, 0.17, 0);
     lowerArm.rotation.z = -0.55;
     lamp.add(lowerArm);
-
-    const lowerArmCyl = cyl(0.036, 0.036, 1.5, 10, lampArmMat, 0, 0.75, 0);
-    lowerArm.add(lowerArmCyl);
+    lowerArm.add(cyl(0.036, 0.036, 1.5, 10, lampArmMat, 0, 0.75, 0));
     lowerArm.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 1.5, 0));
 
-    // Upper arm
     const upperArm = new THREE.Group();
     upperArm.position.set(0, 1.5, 0);
     upperArm.rotation.z = 1.1;
     lowerArm.add(upperArm);
+    upperArm.add(cyl(0.032, 0.032, 1.2, 10, lampArmMat, 0, 0.6, 0));
 
-    const upperArmCyl = cyl(0.032, 0.032, 1.2, 10, lampArmMat, 0, 0.6, 0);
-    upperArm.add(upperArmCyl);
-
-    // Head
     const head = new THREE.Group();
     head.position.set(-0.3, 1.2, 0);
     head.rotation.z = 1.4;
     upperArm.add(head);
 
-    // Cone lamp shade
     const cone = new THREE.Mesh(
       new THREE.ConeGeometry(0.34, 0.44, 24, 1, true),
       lampConeMat,
@@ -448,7 +436,6 @@ export default function ProjectsPage() {
     cone.position.y = -0.22;
     head.add(cone);
 
-    // Bulb
     const bulb = new THREE.Mesh(
       new THREE.SphereGeometry(0.09, 16, 16),
       bulbMat,
@@ -456,7 +443,6 @@ export default function ProjectsPage() {
     bulb.position.y = -0.18;
     head.add(bulb);
 
-    // Connector piece
     const connector = new THREE.Mesh(
       new THREE.CylinderGeometry(0.15, 0.15, 0.15, 8),
       lampArmMat,
@@ -464,12 +450,11 @@ export default function ProjectsPage() {
     connector.position.y = -0.35;
     head.add(connector);
 
-    // PLANT - More leafy with branches
+    // ─── Plant ───────────────────────────────────────────────────────────────
     const plant = new THREE.Group();
     plant.position.set(-2.7, DESK_Y, -1);
     scene.add(plant);
 
-    // Pot body
     const potBody = new THREE.Mesh(
       new THREE.CylinderGeometry(0.28, 0.2, 0.45, 20),
       potMat,
@@ -479,7 +464,6 @@ export default function ProjectsPage() {
     potBody.receiveShadow = true;
     plant.add(potBody);
 
-    // Pot rim
     const potRim = new THREE.Mesh(
       new THREE.CylinderGeometry(0.31, 0.28, 0.06, 20),
       potRimMat,
@@ -488,7 +472,6 @@ export default function ProjectsPage() {
     potRim.castShadow = true;
     plant.add(potRim);
 
-    // Soil surface
     const soil = new THREE.Mesh(
       new THREE.CylinderGeometry(0.27, 0.27, 0.04, 20),
       soilMat,
@@ -496,11 +479,8 @@ export default function ProjectsPage() {
     soil.position.y = 0.47;
     plant.add(soil);
 
-    // Main stem (taller and thicker)
-    const mainStem = cyl(0.04, 0.045, 0.75, 12, stemMat, 0, 0.85, 0);
-    plant.add(mainStem);
+    plant.add(cyl(0.04, 0.045, 0.75, 12, stemMat, 0, 0.85, 0));
 
-    // Branch creation helper
     const makeBranch = (
       px,
       py,
@@ -512,7 +492,6 @@ export default function ProjectsPage() {
     ) => {
       const branchGroup = new THREE.Group();
       branchGroup.position.set(px, py, pz);
-
       const branchCyl = cyl(
         thickness,
         thickness,
@@ -523,33 +502,25 @@ export default function ProjectsPage() {
         length / 2,
         0,
       );
-
-      if (rotationAxis === "x") {
-        branchGroup.rotation.x = angle;
-      } else if (rotationAxis === "z") {
-        branchGroup.rotation.z = angle;
-      } else if (rotationAxis === "y") {
-        branchGroup.rotation.y = angle;
-      }
-
+      if (rotationAxis === "x") branchGroup.rotation.x = angle;
+      else if (rotationAxis === "z") branchGroup.rotation.z = angle;
+      else if (rotationAxis === "y") branchGroup.rotation.y = angle;
       branchGroup.add(branchCyl);
       plant.add(branchGroup);
       return branchGroup;
     };
 
-    // Main branches extending from the stem
     const branchPoints = [
-      { y: 0.65, angle: -0.4, length: 0.28, thickness: 0.022, axis: "x" }, // lower left
-      { y: 0.65, angle: 0.4, length: 0.28, thickness: 0.022, axis: "x" }, // lower right
-      { y: 0.85, angle: -0.5, length: 0.35, thickness: 0.025, axis: "x" }, // middle left
-      { y: 0.85, angle: 0.5, length: 0.35, thickness: 0.025, axis: "x" }, // middle right
-      { y: 1.05, angle: -0.45, length: 0.4, thickness: 0.028, axis: "x" }, // upper left
-      { y: 1.05, angle: 0.45, length: 0.4, thickness: 0.028, axis: "x" }, // upper right
-      { y: 1.2, angle: 0, length: 0.32, thickness: 0.03, axis: "x" }, // top front
-      { y: 1.2, angle: Math.PI, length: 0.32, thickness: 0.03, axis: "x" }, // top back
+      { y: 0.65, angle: -0.4, length: 0.28, thickness: 0.022, axis: "x" },
+      { y: 0.65, angle: 0.4, length: 0.28, thickness: 0.022, axis: "x" },
+      { y: 0.85, angle: -0.5, length: 0.35, thickness: 0.025, axis: "x" },
+      { y: 0.85, angle: 0.5, length: 0.35, thickness: 0.025, axis: "x" },
+      { y: 1.05, angle: -0.45, length: 0.4, thickness: 0.028, axis: "x" },
+      { y: 1.05, angle: 0.45, length: 0.4, thickness: 0.028, axis: "x" },
+      { y: 1.2, angle: 0, length: 0.32, thickness: 0.03, axis: "x" },
+      { y: 1.2, angle: Math.PI, length: 0.32, thickness: 0.03, axis: "x" },
     ];
-
-    branchPoints.forEach((point) => {
+    branchPoints.forEach((point) =>
       makeBranch(
         0,
         point.y,
@@ -558,10 +529,9 @@ export default function ProjectsPage() {
         point.length,
         point.thickness,
         point.axis,
-      );
-    });
+      ),
+    );
 
-    // Enhanced leaf creation with more variety
     const makeLeafDetailed = (
       mat,
       px,
@@ -582,21 +552,18 @@ export default function ProjectsPage() {
       m.rotation.set(rx, ry, rz);
       m.castShadow = true;
       plant.add(m);
-
-      // Add small stem connection if it's a branch tip leaf
       if (isBranchTip) {
-        const connector = new THREE.Mesh(
+        const conn = new THREE.Mesh(
           new THREE.CylinderGeometry(0.012, 0.015, 0.08, 6),
           stemMat,
         );
-        connector.position.set(px * 0.7, py - 0.05, pz * 0.7);
-        connector.rotation.set(rx * 0.5, ry, rz * 0.5);
-        connector.castShadow = true;
-        plant.add(connector);
+        conn.position.set(px * 0.7, py - 0.05, pz * 0.7);
+        conn.rotation.set(rx * 0.5, ry, rz * 0.5);
+        conn.castShadow = true;
+        plant.add(conn);
       }
     };
 
-    // Central top cluster (dense foliage)
     const stemTop = 1.28;
     makeLeafDetailed(
       leafMat,
@@ -676,8 +643,6 @@ export default function ProjectsPage() {
       1.02,
       true,
     );
-
-    // Left side branch leaves
     makeLeafDetailed(
       leafMat,
       -0.28,
@@ -738,8 +703,6 @@ export default function ProjectsPage() {
       0.18,
       0.9,
     );
-
-    // Right side branch leaves
     makeLeafDetailed(
       leafDarkMat,
       0.28,
@@ -800,8 +763,6 @@ export default function ProjectsPage() {
       0.18,
       0.9,
     );
-
-    // Lower branch leaves (drooping)
     makeLeafDetailed(
       leafMat,
       -0.25,
@@ -851,7 +812,6 @@ export default function ProjectsPage() {
       0.8,
     );
 
-    // Additional smaller leaves for extra fullness
     const extraLeaves = [
       {
         mat: leafMat,
@@ -926,8 +886,7 @@ export default function ProjectsPage() {
         sz: 0.85,
       },
     ];
-
-    extraLeaves.forEach((leaf) => {
+    extraLeaves.forEach((leaf) =>
       makeLeafDetailed(
         leaf.mat,
         leaf.px,
@@ -939,9 +898,10 @@ export default function ProjectsPage() {
         leaf.sx,
         leaf.sy,
         leaf.sz,
-      );
-    });
+      ),
+    );
 
+    // ─── Lights ──────────────────────────────────────────────────────────────
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     const overhead = new THREE.DirectionalLight(0xffffff, 1.1);
     overhead.position.set(0, 8, 4);
@@ -953,6 +913,7 @@ export default function ProjectsPage() {
     overhead.shadow.camera.bottom = -6;
     overhead.shadow.camera.far = 30;
     scene.add(overhead);
+
     const lampLight = new THREE.SpotLight(
       0xffffff,
       2.5,
@@ -968,6 +929,7 @@ export default function ProjectsPage() {
     scene.add(lampLight);
     scene.add(lampLight.target);
 
+    // ─── Floor & Walls ───────────────────────────────────────────────────────
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(30, 30),
       new THREE.MeshStandardMaterial({ color: 0x1a1a28, roughness: 1 }),
@@ -987,7 +949,6 @@ export default function ProjectsPage() {
       wallW = 24,
       wallD = 20;
 
-    // BACK WALL
     const backWallZ = -2.1;
     const backWall = new THREE.Mesh(
       new THREE.PlaneGeometry(wallW, wallH),
@@ -1015,6 +976,7 @@ export default function ProjectsPage() {
     rightWall.receiveShadow = true;
     scene.add(rightWall);
 
+    // ─── Grid lines ──────────────────────────────────────────────────────────
     const fadedLineMat = new THREE.MeshBasicMaterial({
       color: 0xdb9834,
       transparent: true,
@@ -1025,7 +987,6 @@ export default function ProjectsPage() {
       m.position.set(px, py, pz);
       scene.add(m);
     };
-    // Back wall grid
     const bwZ = backWallZ + 0.02;
     for (let i = 0; i < 5; i++)
       wallLine(wallW, 0.025, 0.01, 0, floorY + 1.5 + i * 1.6, bwZ);
@@ -1062,6 +1023,393 @@ export default function ProjectsPage() {
       );
       m.position.set(i * 2.5, floorY + 0.005, 0);
       scene.add(m);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HOME DECOR
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ── Bookshelf on left wall ───────────────────────────────────────────────
+    const shelfMat = new THREE.MeshStandardMaterial({
+      color: 0x3d1f08,
+      roughness: 0.75,
+      metalness: 0.05,
+    });
+    const shelfPanelMat = new THREE.MeshStandardMaterial({
+      color: 0x4a2810,
+      roughness: 0.75,
+    });
+
+    const bookshelf = new THREE.Group();
+    bookshelf.position.set(-10.8, floorY, -0.5);
+    bookshelf.rotation.y = Math.PI / 2;
+    scene.add(bookshelf);
+
+    // Shelf unit sides, back, and shelves
+    bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, -0.96, 2.0, 0)); // left side
+    bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, 0.96, 2.0, 0)); // right side
+    bookshelf.add(box(1.92, 0.1, 1.8, shelfMat, 0, 0.05, 0)); // bottom
+    bookshelf.add(box(1.92, 0.1, 1.8, shelfMat, 0, 4.0, 0)); // top
+    bookshelf.add(box(1.92, 4.0, 0.08, shelfPanelMat, 0, 2.0, -0.86)); // back panel
+    // Shelves at intervals
+    [1.1, 2.1, 3.0].forEach((sy) => {
+      bookshelf.add(box(1.92, 0.08, 1.8, shelfMat, 0, sy, 0));
+    });
+
+    // Books on each shelf
+    const bookColors = [
+      0x8b1a1a, 0x1a4a8b, 0x2a7a2a, 0xb8860b, 0x6a0dad, 0xc0392b, 0x2980b9,
+      0x27ae60, 0xe67e22, 0x8e44ad, 0xd4380d, 0x096dd9, 0x389e0d, 0xd48806,
+      0x531dab,
+    ];
+    const shelfLevels = [0.18, 1.18, 2.18, 3.08];
+    shelfLevels.forEach((sy, si) => {
+      let xCursor = -0.85;
+      const numBooks = 5 + (si % 3);
+      for (let b = 0; b < numBooks && xCursor < 0.85; b++) {
+        const bw = 0.1 + Math.random() * 0.08;
+        const bh = 0.55 + Math.random() * 0.25;
+        const tilt = (Math.random() - 0.5) * 0.08;
+        const bMat = new THREE.MeshStandardMaterial({
+          color: bookColors[(si * 5 + b) % bookColors.length],
+          roughness: 0.8,
+        });
+        const book = box(
+          bw - 0.015,
+          bh,
+          0.72,
+          bMat,
+          xCursor + bw / 2,
+          sy + bh / 2,
+          0,
+          0,
+          0,
+          tilt,
+        );
+        bookshelf.add(book);
+        // Spine highlight strip
+        const spineMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          roughness: 0.9,
+          transparent: true,
+          opacity: 0.18,
+        });
+        bookshelf.add(
+          box(
+            bw - 0.015,
+            0.04,
+            0.01,
+            spineMat,
+            xCursor + bw / 2,
+            sy + bh * 0.7,
+            -0.36,
+          ),
+        );
+        xCursor += bw + 0.015;
+      }
+    });
+
+    // Tiny vase on shelf
+    const vaseMatS = new THREE.MeshStandardMaterial({
+      color: 0x5c8a6e,
+      roughness: 0.4,
+      metalness: 0.2,
+    });
+    bookshelf.add(cyl(0.08, 0.06, 0.28, 12, vaseMatS, 0.7, 3.22, 0));
+    bookshelf.add(cyl(0.13, 0.08, 0.04, 12, vaseMatS, 0.7, 3.38, 0));
+
+    // Frame 1 — center
+    const frameMat1 = new THREE.MeshStandardMaterial({
+      color: 0x2c1a08,
+      roughness: 0.6,
+      metalness: 0.2,
+    });
+    const artMat1 = new THREE.MeshStandardMaterial({
+      color: 0x0d1a2e,
+      roughness: 0.95,
+      emissive: 0x0a1828,
+      emissiveIntensity: 0.3,
+    });
+    const frame1 = new THREE.Group();
+    frame1.position.set(0, floorY + 5.5, backWallZ + 0.04);
+    scene.add(frame1);
+    frame1.add(box(2.0, 1.3, 0.06, frameMat1, 0, 0, 0)); // frame body
+    frame1.add(box(1.78, 1.08, 0.04, artMat1, 0, 0, 0.02)); // canvas
+
+    // Moon shape on art (glowing orb)
+    const moonMat = new THREE.MeshStandardMaterial({
+      color: 0xfff8e1,
+      roughness: 0.3,
+      emissive: 0xffe87c,
+      emissiveIntensity: 0.6,
+    });
+    const moon = new THREE.Mesh(
+      new THREE.SphereGeometry(0.22, 16, 16),
+      moonMat,
+    );
+    moon.position.set(-0.28, 0.18, 0.05);
+    moon.scale.set(1, 1, 0.15);
+    frame1.add(moon);
+
+    // Mountain silhouette inside frame
+    const mtMat = new THREE.MeshStandardMaterial({
+      color: 0x1a2a40,
+      roughness: 1,
+    });
+    [
+      { x: -0.55, w: 0.5, h: 0.35 },
+      { x: 0.1, w: 0.65, h: 0.5 },
+      { x: 0.62, w: 0.4, h: 0.28 },
+    ].forEach(({ x, w, h }) => {
+      const geo = new THREE.ConeGeometry(w / 2, h, 3);
+      const mt = new THREE.Mesh(geo, mtMat);
+      mt.position.set(x, -0.28, 0.05);
+      frame1.add(mt);
+    });
+
+    // Frame 2 — left of center
+    const frameMat2 = new THREE.MeshStandardMaterial({
+      color: 0x8b7355,
+      roughness: 0.5,
+      metalness: 0.35,
+    });
+    const artMat2 = new THREE.MeshStandardMaterial({
+      color: 0x1a0d0d,
+      roughness: 0.95,
+      emissive: 0x2a0a0a,
+      emissiveIntensity: 0.15,
+    });
+    const frame2 = new THREE.Group();
+    frame2.position.set(-3.8, floorY + 5.8, backWallZ + 0.04);
+    scene.add(frame2);
+    frame2.add(box(1.1, 0.9, 0.06, frameMat2, 0, 0, 0));
+    frame2.add(box(0.92, 0.72, 0.04, artMat2, 0, 0, 0.02));
+
+    const lineAccent = new THREE.MeshStandardMaterial({
+      color: 0xdb9834,
+      roughness: 0.8,
+      transparent: true,
+      opacity: 0.7,
+    });
+    [-0.18, 0, 0.18].forEach((lx) => {
+      frame2.add(box(0.04, 0.55, 0.01, lineAccent, lx, 0, 0.04));
+    });
+
+    // Frame 3 — right of center, portrait
+    const frameMat3 = new THREE.MeshStandardMaterial({
+      color: 0x1a1a2a,
+      roughness: 0.3,
+      metalness: 0.8,
+    });
+    const artMat3 = new THREE.MeshStandardMaterial({
+      color: 0x050510,
+      roughness: 0.98,
+    });
+    const frame3 = new THREE.Group();
+    frame3.position.set(3.5, floorY + 5.6, backWallZ + 0.04);
+    scene.add(frame3);
+    frame3.add(box(0.85, 1.15, 0.06, frameMat3, 0, 0, 0));
+    frame3.add(box(0.68, 0.98, 0.04, artMat3, 0, 0, 0.02));
+
+    // Constellation dots inside frame 3
+    const starMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.9,
+    });
+    const starPositions = [
+      [0, 0.3],
+      [-0.18, 0.1],
+      [0.15, 0.05],
+      [-0.08, -0.15],
+      [0.2, -0.25],
+      [-0.22, -0.3],
+      [0.05, -0.38],
+    ];
+    starPositions.forEach(([sx, sy]) => {
+      const star = new THREE.Mesh(
+        new THREE.SphereGeometry(0.022, 8, 8),
+        starMat,
+      );
+      star.position.set(sx, sy, 0.05);
+      frame3.add(star);
+    });
+
+    // Curtains
+    const curtainMat = new THREE.MeshStandardMaterial({
+      color: 0x2a1840,
+      roughness: 0.95,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.88,
+    });
+    const curtainRodMat = new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      roughness: 0.3,
+      metalness: 0.9,
+    });
+
+    // Left curtain panel
+    const makeWavyCurtain = (x, flip = false) => {
+      const cGroup = new THREE.Group();
+      cGroup.position.set(x, floorY + wallH * 0.92, backWallZ + 0.06);
+      scene.add(cGroup);
+
+      // Curtain rod segment
+      cGroup.add(box(2.2, 0.06, 0.06, curtainRodMat, 0, 0, 0));
+      const finialMat = new THREE.MeshStandardMaterial({
+        color: 0xd4af37,
+        roughness: 0.2,
+        metalness: 0.9,
+      });
+      cGroup.add(
+        new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), finialMat),
+      );
+      const finial = new THREE.Mesh(
+        new THREE.SphereGeometry(0.1, 12, 12),
+        finialMat,
+      );
+      finial.position.x = flip ? -1.1 : 1.1;
+      cGroup.add(finial);
+
+      // Curtain 
+      const panelW = 0.35;
+      const panelH = wallH * 0.85;
+      for (let p = 0; p < 5; p++) {
+        const px = (flip ? -1 : 1) * (p * (panelW + 0.02) - 0.7);
+        const depth = Math.sin(p * 1.2) * 0.06;
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(panelW, panelH, 0.035),
+          curtainMat,
+        );
+        panel.position.set(px, -panelH / 2, depth);
+        panel.castShadow = true;
+        cGroup.add(panel);
+      }
+    };
+    makeWavyCurtain(-8.5, false);
+    makeWavyCurtain(8.5, true);
+
+    // Lamp 
+    const floorLampGroup = new THREE.Group();
+    floorLampGroup.position.set(9.5, floorY, -1.6);
+    scene.add(floorLampGroup);
+
+    const flLegMat = new THREE.MeshStandardMaterial({
+      color: 0x333344,
+      roughness: 0.3,
+      metalness: 0.85,
+    });
+    const flShadeMat = new THREE.MeshStandardMaterial({
+      color: 0xf5e6c8,
+      roughness: 0.6,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+    });
+    const flBulbMat = new THREE.MeshStandardMaterial({
+      color: 0xfffce0,
+      emissive: 0xfff5a0,
+      emissiveIntensity: 1.4,
+    });
+
+    // Base
+    floorLampGroup.add(cyl(0.28, 0.35, 0.08, 20, flLegMat, 0, 0.04, 0));
+    // Pole
+    floorLampGroup.add(cyl(0.038, 0.038, 4.2, 12, flLegMat, 0, 2.18, 0));
+    // Shade
+    const flShade = new THREE.Mesh(
+      new THREE.ConeGeometry(0.55, 0.6, 24, 1, true),
+      flShadeMat,
+    );
+    flShade.rotation.x = Math.PI;
+    flShade.position.y = 4.5;
+    floorLampGroup.add(flShade);
+    // Shade top cap
+    floorLampGroup.add(cyl(0.08, 0.08, 0.04, 16, flLegMat, 0, 4.82, 0));
+    // Bulb
+    const flBulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.1, 12, 12),
+      flBulbMat,
+    );
+    flBulb.position.y = 4.45;
+    floorLampGroup.add(flBulb);
+
+    // Warm point light from floor lamp
+    const floorLampLight = new THREE.PointLight(0xfff3d0, 1.4, 10, 1.5);
+    floorLampLight.position.set(9.5, floorY + 4.4, -1.6);
+    scene.add(floorLampLight);
+
+    // Sticky notes 
+    const stickyColors = [0xfff176, 0xf48fb1, 0x80deea];
+    [
+      [2.8, DESK_Y + 0.04, 0.5, 0.05], // Lowered Y
+      [-0.5, DESK_Y + 0.04, -0.9, -0.06], // Lowered Y
+    ].forEach(([sx, sy, sz, rot], i) => {
+      const sMat = new THREE.MeshStandardMaterial({
+        color: stickyColors[i],
+        roughness: 0.9,
+      });
+      const s = box(0.38, 0.005, 0.38, sMat, sx, sy, sz, 0, rot, 0);
+      scene.add(s);
+      // Tiny lines on sticky
+      const lineMat = new THREE.MeshStandardMaterial({
+        color: 0x888888,
+        transparent: true,
+        opacity: 0.3,
+      });
+      [0.05, 0.11, 0.17].forEach((lz) => {
+        const ln = box(
+          0.28,
+          0.004,
+          0.012,
+          lineMat,
+          sx,
+          sy + 0.003,
+          sz - 0.08 + lz,
+          0,
+          rot,
+          0,
+        );
+        scene.add(ln);
+      });
+    });
+
+    // Pencil holder
+    const holderGroup = new THREE.Group();
+    holderGroup.position.set(-2.2, DESK_Y + 0.04, -0.7); // Moved left (x: -1.5 -> -2.2) and lowered Y
+    scene.add(holderGroup);
+
+    const holderMat = new THREE.MeshStandardMaterial({
+      color: 0x5c3317,
+      roughness: 0.7,
+    });
+    holderGroup.add(cyl(0.12, 0.1, 0.25, 16, holderMat, 0, 0.125, 0));
+
+    // Pencils/pens
+    const pencilColors = [0xffd700, 0xff6b6b, 0x6bcbff, 0xaaffaa, 0xffaaff];
+    for (let p = 0; p < 5; p++) {
+      const angle = (p / 5) * Math.PI * 2;
+      const r = 0.06;
+      const lean = 0.08;
+      const pMat = new THREE.MeshStandardMaterial({
+        color: pencilColors[p],
+        roughness: 0.6,
+      });
+      const pencil = cyl(
+        0.018,
+        0.018,
+        0.52,
+        8,
+        pMat,
+        Math.sin(angle) * r,
+        0.3,
+        Math.cos(angle) * r,
+        Math.sin(angle) * lean * -1.6,
+        0,
+        -Math.cos(angle) * lean * -1.6,
+      );
+      holderGroup.add(pencil);
     }
 
     const camStart = new THREE.Vector3(0, 3.2, 8);
@@ -1185,6 +1533,8 @@ export default function ProjectsPage() {
       );
       laptop.position.y = DESK_Y + 0.05 + Math.sin(t * 0.6) * 0.02;
       lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
+      // Gently flicker floor lamp
+      floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
       renderer.render(scene, camera);
     };
     animate();
