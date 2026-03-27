@@ -136,7 +136,7 @@ export default function GlitchOverlay({ active, onDone }) {
 
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [active]);
+  }, [active, onDone]);
 
   return (
     <canvas

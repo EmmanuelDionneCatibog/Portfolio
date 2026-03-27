@@ -8,12 +8,6 @@ export default function LandingPage() {
     setTimeout(() => setShow(true), 200);
   }, []);
 
-  const slide = (delay = 0) => ({
-    opacity: show ? 1 : 0,
-    transform: show ? "translateX(0)" : "translateX(-40px)",
-    transition: `all 0.6s ease ${delay}s`,
-  });
-
   const imageScale = Math.min(Math.max(window.innerWidth / 1600, 0.7), 1.3);
 
   return (

@@ -135,10 +135,10 @@ export function VideoPlayerWindow({
   const dragOff = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ mx: 0, my: 0, w: 0, h: 0 });
 
-  const [pos, setPos] = useState({
+  const [pos, setPos] = useState(() => ({
     x: 120 + Math.random() * 80,
     y: 80 + Math.random() * 60,
-  });
+  }));
   const [size, setSize] = useState({ w: 680, h: 420 });
   const [full, setFull] = useState(false);
   // minimized state managed externally via onMinimize prop
@@ -353,10 +353,10 @@ export default function FolderWindow({
   const dragOff = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ mx: 0, my: 0, w: 0, h: 0 });
 
-  const [pos, setPos] = useState({
+  const [pos, setPos] = useState(() => ({
     x: 60 + Math.random() * 100,
     y: 50 + Math.random() * 60,
-  });
+  }));
   const [size, setSize] = useState({ w: 760, h: 480 });
   const [full, setFull] = useState(false);
   // video windows opened via onOpenVideo prop (managed by WindowsDesktop)
