@@ -331,58 +331,6 @@ export function createRoomScene(scene) {
     frame3.add(star);
   });
 
-  // ── Curtains on back wall corners ────────────────────────────────────────
-  const curtainMat = new THREE.MeshStandardMaterial({
-    color: 0x2a1840,
-    roughness: 0.95,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.88,
-  });
-  const curtainRodMat = new THREE.MeshStandardMaterial({
-    color: 0x888888,
-    roughness: 0.3,
-    metalness: 0.9,
-  });
-
-  const makeWavyCurtain = (x, flip = false) => {
-    const cGroup = new THREE.Group();
-    cGroup.position.set(x, floorY + wallH * 0.92, backWallZ + 0.06);
-    scene.add(cGroup);
-
-    cGroup.add(box(2.2, 0.06, 0.06, curtainRodMat, 0, 0, 0));
-    const finialMat = new THREE.MeshStandardMaterial({
-      color: 0xd4af37,
-      roughness: 0.2,
-      metalness: 0.9,
-    });
-    cGroup.add(
-      new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 12), finialMat),
-    );
-    const finial = new THREE.Mesh(
-      new THREE.SphereGeometry(0.1, 12, 12),
-      finialMat,
-    );
-    finial.position.x = flip ? -1.1 : 1.1;
-    cGroup.add(finial);
-
-    const panelW = 0.35;
-    const panelH = wallH * 0.85;
-    for (let p = 0; p < 5; p++) {
-      const px = (flip ? -1 : 1) * (p * (panelW + 0.02) - 0.7);
-      const depth = Math.sin(p * 1.2) * 0.06;
-      const panel = new THREE.Mesh(
-        new THREE.BoxGeometry(panelW, panelH, 0.035),
-        curtainMat,
-      );
-      panel.position.set(px, -panelH / 2, depth);
-      panel.castShadow = true;
-      cGroup.add(panel);
-    }
-  };
-  makeWavyCurtain(-8.5, false);
-  makeWavyCurtain(8.5, true);
-
   // ── Floor lamp ───────────────────────────────────────────────────────────
   const floorLampGroup = new THREE.Group();
   floorLampGroup.position.set(9.5, floorY, -1.6);
