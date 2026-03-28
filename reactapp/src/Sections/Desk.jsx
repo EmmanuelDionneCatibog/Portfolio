@@ -253,74 +253,6 @@ export function createDeskScene(scene) {
   );
   lid.add(box(2.75, 0.008, 1.66, screenMat, 0, 0.063, 1.1));
 
-  // ─── Papers ──────────────────────────────────────────────────────────────
-  const paperDefs = [
-    {
-      x: -3,
-      z: 0.2,
-      ry: Math.PI / 2 + 0.05,
-      pw: 1.35,
-      pd: 1.05,
-      yOffset: 0.012,
-    },
-    {
-      x: -2.98,
-      z: 0.21,
-      ry: Math.PI / 2 + 0.12,
-      pw: 1.3,
-      pd: 1.0,
-      yOffset: 0.024,
-    },
-    {
-      x: -2.95,
-      z: 0.19,
-      ry: Math.PI / 2 - 0.08,
-      pw: 1.28,
-      pd: 0.98,
-      yOffset: 0.036,
-    },
-    {
-      x: -2.92,
-      z: 0.22,
-      ry: Math.PI / 2 + 0.22,
-      pw: 1.25,
-      pd: 0.95,
-      yOffset: 0.048,
-    },
-    {
-      x: 2.4,
-      z: -0.2,
-      ry: Math.PI / 2 + 0.15,
-      pw: 1.2,
-      pd: 0.9,
-      yOffset: 0.012,
-    },
-    {
-      x: 3.1,
-      z: 0.6,
-      ry: Math.PI / 2 - 0.3,
-      pw: 1.3,
-      pd: 0.95,
-      yOffset: 0.012,
-    },
-  ];
-  paperDefs.forEach(({ x, z, ry, pw, pd, yOffset }, i) => {
-    scene.add(
-      box(
-        pw,
-        0.012,
-        pd,
-        paperMats[i % paperMats.length],
-        x,
-        DESK_Y + yOffset,
-        z,
-        0,
-        ry,
-        0,
-      ),
-    );
-  });
-
   // ─── Lamp ────────────────────────────────────────────────────────────────
   const lamp = new THREE.Group();
   lamp.position.set(3.6, DESK_Y, -0.4);
@@ -664,39 +596,100 @@ export function createDeskScene(scene) {
     ),
   );
 
-  // ─── Sticky notes ─────────────────────────────────────────────────
-  const stickyColors = [0xfff176, 0xf48fb1, 0x80deea];
-  [
-    [2.8, DESK_Y + 0.04, 0.5, 0.05],
-    [-0.5, DESK_Y + 0.04, -0.9, -0.06],
-  ].forEach(([sx, sy, sz, rot], i) => {
-    const sMat = new THREE.MeshStandardMaterial({
-      color: stickyColors[i],
-      roughness: 0.9,
-    });
-    const s = box(0.38, 0.005, 0.38, sMat, sx, sy, sz, 0, rot, 0);
-    scene.add(s);
-    const lineMat = new THREE.MeshStandardMaterial({
-      color: 0x888888,
-      transparent: true,
-      opacity: 0.3,
-    });
-    [0.05, 0.11, 0.17].forEach((lz) => {
-      const ln = box(
-        0.28,
-        0.004,
-        0.012,
-        lineMat,
-        sx,
-        sy + 0.003,
-        sz - 0.08 + lz,
-        0,
-        rot,
-        0,
-      );
-      scene.add(ln);
-    });
+  // ─── Paper Stack (Left Side) ─────────────────────────────────────────
+  const paperStack = new THREE.Group();
+  const papers = [
+    {
+      pw: 1.35,
+      pd: 1.05,
+      yOffset: 0.012,
+      ry: Math.PI / 2 + 0.05,
+      x: -3,
+      z: 0.2,
+    },
+    {
+      pw: 1.3,
+      pd: 1.0,
+      yOffset: 0.024,
+      ry: Math.PI / 2 + 0.12,
+      x: -2.98,
+      z: 0.21,
+    },
+    {
+      pw: 1.28,
+      pd: 0.98,
+      yOffset: 0.036,
+      ry: Math.PI / 2 - 0.08,
+      x: -2.95,
+      z: 0.19,
+    },
+    {
+      pw: 1.25,
+      pd: 0.95,
+      yOffset: 0.048,
+      ry: Math.PI / 2 + 0.22,
+      x: -2.92,
+      z: 0.22,
+    },
+  ];
+  papers.forEach((paper, i) => {
+    const paperMesh = box(
+      paper.pw,
+      0.012,
+      paper.pd,
+      paperMats[i % paperMats.length],
+      paper.x,
+      DESK_Y + paper.yOffset,
+      paper.z,
+      0,
+      paper.ry,
+      0,
+    );
+    paperStack.add(paperMesh);
   });
+  scene.add(paperStack);
+
+  // ─── Sticky Note (Right Side) ─────────────────────────────────────────
+  const stickyNote = new THREE.Group();
+  const stickyMat = new THREE.MeshStandardMaterial({
+    color: 0xfff176,
+    roughness: 0.9,
+  });
+  const stickyMesh = box(
+    0.38,
+    0.005,
+    0.38,
+    stickyMat,
+    2.8,
+    DESK_Y + 0.04,
+    0.5,
+    0,
+    0.05,
+    0,
+  );
+  stickyNote.add(stickyMesh);
+
+  const lineMat = new THREE.MeshStandardMaterial({
+    color: 0x888888,
+    transparent: true,
+    opacity: 0.3,
+  });
+  [0.05, 0.11, 0.17].forEach((lz) => {
+    const line = box(
+      0.28,
+      0.004,
+      0.012,
+      lineMat,
+      2.8,
+      DESK_Y + 0.043,
+      0.5 - 0.08 + lz,
+      0,
+      0.05,
+      0,
+    );
+    stickyNote.add(line);
+  });
+  scene.add(stickyNote);
 
   // ─── Pencil holder ────────────────────────────────────────────────
   const holderGroup = new THREE.Group();
@@ -734,5 +727,5 @@ export function createDeskScene(scene) {
     holderGroup.add(pencil);
   }
 
-  return { deskGroup, laptop, lampLight, screenMat };
+  return { deskGroup, laptop, lampLight, screenMat, paperStack, stickyNote };
 }

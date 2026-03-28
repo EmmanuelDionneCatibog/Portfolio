@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
+import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
 import GlitchOverlay from "./GlitchOverlay";
 import WindowsDesktop from "./WindowsDesktop";
 import { createDeskScene } from "./Desk";
@@ -68,10 +73,13 @@ export default function ProjectsPage() {
     renderer.setSize(w, h);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.2;
     el.appendChild(renderer.domElement);
 
     // Create desk objects and get references to animated elements
-    const { deskGroup, laptop, lampLight, screenMat } = createDeskScene(scene);
+    const { deskGroup, laptop, lampLight, screenMat, paperStack, stickyNote } =
+      createDeskScene(scene);
 
     // Create room objects and get references
     const { floorLampLight, floorY, backWallZ, wallH, wallW } =
@@ -89,6 +97,131 @@ export default function ProjectsPage() {
     overhead.shadow.camera.bottom = -6;
     overhead.shadow.camera.far = 30;
     scene.add(overhead);
+
+    // ─── Post-processing for outline effect ──────────────────────────────────
+    const composer = new EffectComposer(renderer);
+
+    // Add render pass with original colors
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    // Create outline pass
+    const outlinePass = new OutlinePass(new THREE.Vector2(w, h), scene, camera);
+    outlinePass.edgeStrength = 3.0;
+    outlinePass.edgeGlow = 0.5;
+    outlinePass.edgeThickness = 1.5;
+    outlinePass.pulsePeriod = 0;
+    outlinePass.visibleEdgeColor.set(0xffffff);
+    outlinePass.hiddenEdgeColor.set(0xffffff);
+    composer.addPass(outlinePass);
+
+    // Add gamma correction to fix brightness
+    const gammaPass = new ShaderPass(GammaCorrectionShader);
+    composer.addPass(gammaPass);
+
+    // Make sure the output goes to screen
+    gammaPass.renderToScreen = true;
+
+    // Collect all meshes from paper stack for outlining
+    const paperMeshes = [];
+    if (paperStack) {
+      paperStack.traverse((child) => {
+        if (child.isMesh) {
+          paperMeshes.push(child);
+        }
+      });
+    }
+
+    // Collect all meshes from sticky note for outlining
+    const stickyMeshes = [];
+    if (stickyNote) {
+      stickyNote.traverse((child) => {
+        if (child.isMesh) {
+          stickyMeshes.push(child);
+        }
+      });
+    }
+
+    // Collect all meshes from laptop for outlining
+    const laptopMeshes = [];
+    if (laptop) {
+      laptop.traverse((child) => {
+        if (child.isMesh) {
+          laptopMeshes.push(child);
+        }
+      });
+    }
+
+    // Raycaster for hover detection
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Track currently hovered object
+    let currentHovered = null;
+
+    // Mouse move handler
+    const onMouseMove = (event) => {
+      // Calculate mouse position in normalized coordinates
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+      // Update the picking ray
+      raycaster.setFromCamera(mouse, camera);
+
+      // Check all meshes from all groups
+      const allMeshes = [...paperMeshes, ...stickyMeshes, ...laptopMeshes];
+      const intersects = raycaster.intersectObjects(allMeshes);
+
+      if (intersects.length > 0) {
+        const hoveredMesh = intersects[0].object;
+
+        // Find which group this mesh belongs to
+        let hoveredGroup = null;
+        if (paperMeshes.includes(hoveredMesh)) {
+          hoveredGroup = "paper";
+        } else if (stickyMeshes.includes(hoveredMesh)) {
+          hoveredGroup = "sticky";
+        } else if (laptopMeshes.includes(hoveredMesh)) {
+          hoveredGroup = "laptop";
+        }
+
+        if (currentHovered !== hoveredGroup) {
+          // Clear previous outline
+          outlinePass.selectedObjects = [];
+
+          // Set new outline based on what's hovered
+          if (hoveredGroup === "paper") {
+            outlinePass.selectedObjects = paperMeshes;
+          } else if (hoveredGroup === "sticky") {
+            outlinePass.selectedObjects = stickyMeshes;
+          } else if (hoveredGroup === "laptop") {
+            outlinePass.selectedObjects = laptopMeshes;
+          }
+
+          currentHovered = hoveredGroup;
+        }
+      } else if (currentHovered !== null) {
+        // No intersection, clear outline
+        outlinePass.selectedObjects = [];
+        currentHovered = null;
+      }
+    };
+
+    // Add mouse move listener
+    renderer.domElement.addEventListener("mousemove", onMouseMove);
+
+    // Handle window resize for composer
+    const onResize = () => {
+      const nw = el.clientWidth,
+        nh = el.clientHeight;
+      camera.aspect = nw / nh;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nw, nh);
+      composer.setSize(nw, nh);
+    };
+
+    window.addEventListener("resize", onResize);
 
     const camStart = new THREE.Vector3(0, 3.2, 8);
     const camEnd = new THREE.Vector3(0, 1.52, 0.35);
@@ -190,15 +323,6 @@ export default function ProjectsPage() {
     el.addEventListener("touchstart", onTouchStart, { passive: true });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
 
-    const onResize = () => {
-      const nw = el.clientWidth,
-        nh = el.clientHeight;
-      camera.aspect = nw / nh;
-      camera.updateProjectionMatrix();
-      renderer.setSize(nw, nh);
-    };
-    window.addEventListener("resize", onResize);
-
     let raf,
       t = 0;
     const DESK_Y = 0;
@@ -216,13 +340,16 @@ export default function ProjectsPage() {
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
       if (floorLampLight)
         floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
-      renderer.render(scene, camera);
+
+      // Render using composer
+      composer.render();
     };
     animate();
 
     return () => {
       cancelAnimationFrame(raf);
       observer.disconnect();
+      renderer.domElement.removeEventListener("mousemove", onMouseMove);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
