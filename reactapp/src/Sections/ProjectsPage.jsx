@@ -85,7 +85,7 @@ export default function ProjectsPage() {
     const { floorLampLight, floorY, backWallZ, wallH, wallW } =
       createRoomScene(scene);
 
-    // ─── Lights ──────────────────────────────────────────────────────────────
+    // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
     const overhead = new THREE.DirectionalLight(0xffffff, 1.1);
     overhead.position.set(0, 8, 4);
@@ -98,7 +98,6 @@ export default function ProjectsPage() {
     overhead.shadow.camera.far = 30;
     scene.add(overhead);
 
-    // ─── Post-processing ──────────────────────────────────────────────────────
     const composer = new EffectComposer(renderer);
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
@@ -123,13 +122,11 @@ export default function ProjectsPage() {
       });
     }
 
-    // Store original transforms for each paper so we can animate back to them
     const paperOrigins = paperMeshes.map((m) => ({
       y: m.position.y,
       ry: m.rotation.y,
     }));
 
-    // Target transforms when hovered — only top 2 papers float and fan
     const paperTargets = paperMeshes.map((m, i) => {
       if (i < paperMeshes.length - 2) {
         // Bottom papers stay put
@@ -142,7 +139,6 @@ export default function ProjectsPage() {
       };
     });
 
-    // 0 = resting, 1 = fully hovered
     let paperHoverProgress = 0;
 
     const stickyMeshes = [];
@@ -163,7 +159,7 @@ export default function ProjectsPage() {
     const mouse = new THREE.Vector2();
     let currentHovered = null;
 
-    // World anchor positions for each label (above each object)
+    // World anchor positions for each label
     const labelAnchors = {
       laptop: new THREE.Vector3(0, 0, 0),
       paper: new THREE.Vector3(-3, 0.4, 0.2),
@@ -365,7 +361,7 @@ export default function ProjectsPage() {
       if (floorLampLight)
         floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
 
-      // Animate paper stack float/fan on hover
+      // Animate paper float
       const paperHovered = currentHovered === "paper";
       paperHoverProgress +=
         ((paperHovered ? 1 : 0) - paperHoverProgress) * 0.08;
@@ -421,7 +417,7 @@ export default function ProjectsPage() {
         onShutdown={handleShutdown}
       />
 
-      {/* Hover label — 2D HTML projected from 3D position */}
+      {/* Hover label */}
       {hoverLabel && (
         <div
           style={{
