@@ -661,7 +661,7 @@ export function createDeskScene(scene) {
     0.38,
     stickyMat,
     2.8,
-    DESK_Y + 0.04,
+    DESK_Y,
     0.5,
     0,
     0.05,

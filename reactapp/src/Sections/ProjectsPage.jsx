@@ -336,7 +336,8 @@ export default function ProjectsPage() {
       camera.lookAt(
         new THREE.Vector3().lerpVectors(lookStart, lookEnd, scrollProgress),
       );
-      if (laptop) laptop.position.y = DESK_Y + 0.05 + Math.sin(t * 0.6) * 0.02;
+      // Removed the laptop movement animation
+      // if (laptop) laptop.position.y = DESK_Y + 0.05 + Math.sin(t * 0.6) * 0.02;
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
       if (floorLampLight)
         floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
