@@ -341,7 +341,7 @@ export default function AboutPage() {
                 }}>
                 {/* GitHub */}
                 <a
-                  href="https://github.com/yourusername"
+                  href="https://github.com/EmmanuelDionneCatibog"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -373,7 +373,7 @@ export default function AboutPage() {
 
                 {/* Facebook */}
                 <a
-                  href="https://facebook.com/yourusername"
+                  href="https://www.facebook.com/emmanueldionne.catibog"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -406,7 +406,7 @@ export default function AboutPage() {
 
                 {/* LinkedIn */}
                 <a
-                  href="https://linkedin.com/in/yourusername"
+                  href="https://www.linkedin.com/in/emmanuel-dionne-catibog-57344a3b9"
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
