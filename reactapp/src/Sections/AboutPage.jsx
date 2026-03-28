@@ -265,7 +265,6 @@ export default function AboutPage() {
     <div className="about-page">
       <div ref={sectionRef} className="about-container">
         <div className="about-content">
-          {/* Two Column Layout */}
           <div
             style={{
               display: "grid",
@@ -275,7 +274,6 @@ export default function AboutPage() {
             }}>
             {/* Left Column */}
             <div>
-              {/* Who I Am */}
               <div style={fadeUp(0.1)}>
                 <p className="about-text">Hi, my name is</p>
                 <h1 className="about-title">Emmanuel Dionne B. Catibog</h1>
@@ -288,12 +286,9 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              {/* Education - Directly under Who I Am */}
-              <div style={{ marginTop: "40px", ...fadeUp(0.15) }}>
+              <div style={{ marginTop: "50px", ...fadeUp(0.15) }}>
                 <h2 className="section-title">Education</h2>
                 <div className="section-underline" />
-
-                {/* Tertiary Education */}
                 <div className="timeline-item">
                   <p className="timeline-date">2022 – 2026</p>
                   <p className="timeline-location">
@@ -303,8 +298,6 @@ export default function AboutPage() {
                     Bachelor of Science in Computer Science
                   </p>
                 </div>
-
-                {/* Senior High School */}
                 <div className="timeline-item">
                   <p className="timeline-date">2019 – 2021</p>
                   <p className="timeline-location">
@@ -315,8 +308,6 @@ export default function AboutPage() {
                     Mathematics (STEM)
                   </p>
                 </div>
-
-                {/* Junior High School */}
                 <div className="timeline-item">
                   <p className="timeline-date">2015 – 2019</p>
                   <p className="timeline-location">
@@ -330,7 +321,7 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Right Column - Profile Picture, Social Icons, Resume Button */}
+            {/* Right Column */}
             <div
               style={{
                 display: "flex",
@@ -340,16 +331,15 @@ export default function AboutPage() {
                 gap: "32px",
                 ...fadeUp(0.2),
               }}>
-              {/* Profile Picture with Interactive Cat Feature */}
               <ProfilePic />
 
-              {/* Social Icons */}
               <div
                 style={{
                   display: "flex",
                   gap: "20px",
                   justifyContent: "center",
                 }}>
+                {/* GitHub */}
                 <a
                   href="https://github.com/yourusername"
                   target="_blank"
@@ -381,6 +371,7 @@ export default function AboutPage() {
                   />
                 </a>
 
+                {/* Facebook */}
                 <a
                   href="https://facebook.com/yourusername"
                   target="_blank"
@@ -413,6 +404,7 @@ export default function AboutPage() {
                   </svg>
                 </a>
 
+                {/* LinkedIn */}
                 <a
                   href="https://linkedin.com/in/yourusername"
                   target="_blank"
@@ -446,7 +438,6 @@ export default function AboutPage() {
                 </a>
               </div>
 
-              {/* Download Resume Button */}
               <button
                 onClick={handleDownloadResume}
                 style={{
@@ -478,8 +469,7 @@ export default function AboutPage() {
             </div>
           </div>
 
-          {/* Tech Carousel */}
-          <div style={{ marginTop: "48px", ...fadeUp(0.3) }}>
+          <div style={{ marginTop: "96px", ...fadeUp(0.3) }}>
             <h1 className="about-title">Technologies &amp; Tools</h1>
             <div className="carousel-wrapper" style={{ marginTop: "32px" }}>
               <CarouselRow items={row1} direction={1} speed={32} />

@@ -93,7 +93,6 @@ export default function NavBar() {
             flexWrap: "wrap",
           }}>
           {[
-            { label: "Home", id: "home" },
             { label: "About", id: "about" },
             { label: "Projects", id: "projects" },
             { label: "Contact", id: "contact" },
