@@ -47,7 +47,7 @@ export default function ProjectsPage() {
     }, 300);
   };
 
-  const handleSignOut = () => {
+  const handleShutdown = () => {
     setShowDesktop(false);
     glitchFiredRef.current = false;
     isRestoringRef.current = true;
@@ -371,7 +371,7 @@ export default function ProjectsPage() {
       <WindowsDesktop
         visible={showDesktop}
         onBack={handleBack}
-        onSignOut={handleSignOut}
+        onShutdown={handleShutdown}
       />
 
       <div

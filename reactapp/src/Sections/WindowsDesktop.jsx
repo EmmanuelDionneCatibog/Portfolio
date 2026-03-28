@@ -3,7 +3,7 @@ import FolderIcon from "./FolderIcon";
 import FolderWindow, { VideoPlayerWindow } from "./FolderWindow";
 import { PROJECTS } from "./constants";
 
-export default function WindowsDesktop({ visible, onSignOut }) {
+export default function WindowsDesktop({ visible, onShutdown }) {
   // windows: { id, type: 'folder'|'video', projIdx?, src?, title?, minimized }
   const [windows, setWindows] = useState([]);
   const [zOrders, setZOrders] = useState([]);
@@ -293,15 +293,15 @@ export default function WindowsDesktop({ visible, onSignOut }) {
               borderTop: "1px solid rgba(219,152,52,0.15)",
               paddingTop: "12px",
             }}>
-            {["Documents", "Projects", "Settings", "Sign out"].map(
+            {["Documents", "Projects", "Settings", "Shutdown"].map(
               (item, i) => (
                 <div
                   key={i}
                   onClick={
-                    item === "Sign out"
+                    item === "Shutdown"
                       ? (e) => {
                           e.stopPropagation();
-                          onSignOut();
+                          onShutdown();
                         }
                       : undefined
                   }
