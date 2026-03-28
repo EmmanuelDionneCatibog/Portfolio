@@ -254,8 +254,8 @@ export default function AboutPage() {
 
   const handleDownloadResume = () => {
     const link = document.createElement("a");
-    link.href = "/resume.pdf";
-    link.download = "Emmanuel_Catibog_Resume.pdf";
+    link.href = "/Catibog_Dionne_Resume_2026.pdf";
+    link.download = "Catibog_Dionne_Resume_2026.pdf";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
