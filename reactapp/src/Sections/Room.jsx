@@ -281,7 +281,7 @@ export function createRoomScene(scene) {
     emissiveIntensity: 0.15,
   });
   const frame2 = new THREE.Group();
-  frame2.position.set(-3.8, floorY + 5.8, backWallZ + 0.04);
+  frame2.position.set(-3.8, floorY + 5.4, backWallZ + 0.04);
   scene.add(frame2);
   frame2.add(box(1.1, 0.9, 0.06, frameMat2, 0, 0, 0));
   frame2.add(box(0.92, 0.72, 0.04, artMat2, 0, 0, 0.02));

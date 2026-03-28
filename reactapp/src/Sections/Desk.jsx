@@ -106,10 +106,10 @@ export function createDeskScene(scene) {
   });
   const paperMats = [
     new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xeeeae0, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xf8f4ec, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xe8e4dc, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xfaf6ee, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
+    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
   ];
   const potMat = new THREE.MeshStandardMaterial({
     color: 0x8b4513,
