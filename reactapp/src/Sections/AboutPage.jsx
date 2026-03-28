@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-
-// ── Logo imports using image URLs (no SVGs) ──────────────────────────────────
+import ProfilePic from "../components/ProfilePic";
 
 const icons = {
   "C++": ({ size = 48 }) => (
@@ -253,17 +252,20 @@ export default function AboutPage() {
     transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
   });
 
+  const handleDownloadResume = () => {
+    const link = document.createElement("a");
+    link.href = "/resume.pdf";
+    link.download = "Emmanuel_Catibog_Resume.pdf";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="about-page">
       <div ref={sectionRef} className="about-container">
         <div className="about-content">
-          {/* Heading */}
-          <div style={{ marginBottom: "56px", ...fadeUp(0) }}>
-            <h1 className="about-title">About Me</h1>
-            <div className="about-title-underline" />
-          </div>
-
-          {/* Who I Am & Education - Side by Side */}
+          {/* Two Column Layout */}
           <div
             style={{
               display: "grid",
@@ -271,67 +273,214 @@ export default function AboutPage() {
               gap: "48px",
               marginBottom: "48px",
             }}>
-            {/* Who I Am */}
-            <div style={fadeUp(0.1)}>
-              <h2 className="section-title">Who I Am</h2>
-              <div className="section-underline" />
-              <p className="about-text">
-                I'm{" "}
-                <span className="about-name">Emmanuel Dionne B. Catibog</span>,
-                a Computer Science student passionate about building meaningful
-                technology at the crossroads of engineering and design. Whether
-                it's developing full-stack applications or exploring emerging
-                technologies like machine learning, I enjoy turning ideas into
-                reality.
-              </p>
+            {/* Left Column */}
+            <div>
+              {/* Who I Am */}
+              <div style={fadeUp(0.1)}>
+                <p className="about-text">Hi, my name is</p>
+                <h1 className="about-title">Emmanuel Dionne B. Catibog</h1>
+                <p className="about-text">
+                  I'm a Computer Science student passionate about building
+                  meaningful technology at the crossroads of engineering and
+                  design. Whether it's developing full-stack applications or
+                  exploring emerging technologies like machine learning, I enjoy
+                  turning ideas into reality.
+                </p>
+              </div>
+
+              {/* Education - Directly under Who I Am */}
+              <div style={{ marginTop: "40px", ...fadeUp(0.15) }}>
+                <h2 className="section-title">Education</h2>
+                <div className="section-underline" />
+
+                {/* Tertiary Education */}
+                <div className="timeline-item">
+                  <p className="timeline-date">2022 – 2026</p>
+                  <p className="timeline-location">
+                    Colegio de San Juan de Letran, Calamba
+                  </p>
+                  <p className="timeline-title">
+                    Bachelor of Science in Computer Science
+                  </p>
+                </div>
+
+                {/* Senior High School */}
+                <div className="timeline-item">
+                  <p className="timeline-date">2019 – 2021</p>
+                  <p className="timeline-location">
+                    Laguna Science Integrated National High School
+                  </p>
+                  <p className="timeline-title">
+                    Senior High School | Science, Technology, Engineering, and
+                    Mathematics (STEM)
+                  </p>
+                </div>
+
+                {/* Junior High School */}
+                <div className="timeline-item">
+                  <p className="timeline-date">2015 – 2019</p>
+                  <p className="timeline-location">
+                    Laguna Science Integrated National High School
+                  </p>
+                  <p className="timeline-title">
+                    Junior High School | Science, Technology, Engineering, and
+                    Mathematics (STEM)
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Education */}
-            <div style={fadeUp(0.2)}>
-              <h2 className="section-title">Education</h2>
-              <div className="section-underline" />
+            {/* Right Column - Profile Picture, Social Icons, Resume Button */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "flex-start",
+                gap: "32px",
+                ...fadeUp(0.2),
+              }}>
+              {/* Profile Picture with Interactive Cat Feature */}
+              <ProfilePic />
 
-              {/* Tertiary Education */}
-              <div className="timeline-item">
-                <p className="timeline-date">2022 – 2026</p>
-                <p className="timeline-location">
-                  Colegio de San Juan de Letran, Calamba
-                </p>
-                <p className="timeline-title">
-                  Bachelor of Science in Computer Science
-                </p>
+              {/* Social Icons */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "20px",
+                  justifyContent: "center",
+                }}>
+                <a
+                  href="https://github.com/yourusername"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#1a1a2a",
+                    borderRadius: "50%",
+                    transition: "transform 0.2s, background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                    e.currentTarget.style.backgroundColor = "#333";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.backgroundColor = "#1a1a2a";
+                  }}>
+                  <img
+                    src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
+                    alt="GitHub"
+                    width="28"
+                    height="28"
+                    style={{ filter: "invert(1)" }}
+                  />
+                </a>
+
+                <a
+                  href="https://facebook.com/yourusername"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#1a1a2a",
+                    borderRadius: "50%",
+                    transition: "transform 0.2s, background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                    e.currentTarget.style.backgroundColor = "#1877f2";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.backgroundColor = "#1a1a2a";
+                  }}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="white">
+                    <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879v-6.99h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.99C18.343 21.128 22 16.991 22 12z" />
+                  </svg>
+                </a>
+
+                <a
+                  href="https://linkedin.com/in/yourusername"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#1a1a2a",
+                    borderRadius: "50%",
+                    transition: "transform 0.2s, background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.1)";
+                    e.currentTarget.style.backgroundColor = "#0a66c2";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.backgroundColor = "#1a1a2a";
+                  }}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="white">
+                    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451c.979 0 1.771-.773 1.771-1.729V1.729C24 .774 23.204 0 22.225 0z" />
+                  </svg>
+                </a>
               </div>
 
-              {/* Senior High School */}
-              <div className="timeline-item">
-                <p className="timeline-date">2019 – 2021</p>
-                <p className="timeline-location">
-                  Laguna Science Integrated National High School
-                </p>
-                <p className="timeline-title">
-                  Senior High School | Science, Technology, Engineering, and
-                  Mathematics (STEM)
-                </p>
-              </div>
-
-              {/* Junior High School */}
-              <div className="timeline-item">
-                <p className="timeline-date">2015 – 2019</p>
-                <p className="timeline-location">
-                  Laguna Science Integrated National High School
-                </p>
-                <p className="timeline-title">
-                  Junior High School | Science, Technology, Engineering, and
-                  Mathematics (STEM)
-                </p>
-              </div>
+              {/* Download Resume Button */}
+              <button
+                onClick={handleDownloadResume}
+                style={{
+                  padding: "12px 28px",
+                  fontSize: "16px",
+                  fontWeight: "600",
+                  color: "#fff",
+                  backgroundColor: "#db9834",
+                  border: "none",
+                  borderRadius: "8px",
+                  cursor: "pointer",
+                  transition: "all 0.3s ease",
+                  boxShadow: "0 4px 12px rgba(219,152,52,0.3)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 6px 16px rgba(219,152,52,0.4)";
+                  e.currentTarget.style.backgroundColor = "#e6a845";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 4px 12px rgba(219,152,52,0.3)";
+                  e.currentTarget.style.backgroundColor = "#db9834";
+                }}>
+                Download Resume
+              </button>
             </div>
           </div>
 
           {/* Tech Carousel */}
           <div style={{ marginTop: "48px", ...fadeUp(0.3) }}>
             <h1 className="about-title">Technologies &amp; Tools</h1>
-            <div className="section-underline" />
             <div className="carousel-wrapper" style={{ marginTop: "32px" }}>
               <CarouselRow items={row1} direction={1} speed={32} />
               <CarouselRow items={row2} direction={-1} speed={26} />
