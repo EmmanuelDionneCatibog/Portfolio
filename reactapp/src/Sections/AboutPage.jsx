@@ -275,9 +275,9 @@ export default function AboutPage() {
             {/* Left Column */}
             <div>
               <div style={fadeUp(0.1)}>
-                <p className="about-text">Hi, my name is</p>
+                <p className="about-intro">Hi, my name is</p>
                 <h1 className="about-title">Emmanuel Dionne B. Catibog</h1>
-                <p className="about-text">
+                <p className="about-intro">
                   I'm a Computer Science student passionate about building
                   meaningful technology at the crossroads of engineering and
                   design. Whether it's developing full-stack applications or

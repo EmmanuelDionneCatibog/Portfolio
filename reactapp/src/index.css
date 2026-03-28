@@ -118,6 +118,13 @@ button {
   color: rgba(215, 198, 172, 0.8);
 }
 
+.about-intro {
+  margin: 0 0 16px;
+  line-height: 1.85;
+  font-size: 15px;
+  color: #d7c6ac;
+}
+
 /* ── Timeline ── */
 .timeline-item {
   position: relative;

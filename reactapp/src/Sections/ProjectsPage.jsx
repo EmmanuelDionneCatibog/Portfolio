@@ -23,6 +23,8 @@ export default function ProjectsPage() {
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
+  const [hoverLabel, setHoverLabel] = useState(null); // { text, x, y }
+  const labelPosRef = useRef(null);
 
   const triggerGlitch = () => {
     if (glitchFiredRef.current) return;
@@ -77,11 +79,9 @@ export default function ProjectsPage() {
     renderer.toneMappingExposure = 1.2;
     el.appendChild(renderer.domElement);
 
-    // Create desk objects and get references to animated elements
     const { deskGroup, laptop, lampLight, screenMat, paperStack, stickyNote } =
       createDeskScene(scene);
 
-    // Create room objects and get references
     const { floorLampLight, floorY, backWallZ, wallH, wallW } =
       createRoomScene(scene);
 
@@ -98,14 +98,11 @@ export default function ProjectsPage() {
     overhead.shadow.camera.far = 30;
     scene.add(overhead);
 
-    // ─── Post-processing for outline effect ──────────────────────────────────
+    // ─── Post-processing ──────────────────────────────────────────────────────
     const composer = new EffectComposer(renderer);
-
-    // Add render pass with original colors
     const renderPass = new RenderPass(scene, camera);
     composer.addPass(renderPass);
 
-    // Create outline pass
     const outlinePass = new OutlinePass(new THREE.Vector2(w, h), scene, camera);
     outlinePass.edgeStrength = 3.0;
     outlinePass.edgeGlow = 0.5;
@@ -115,103 +112,133 @@ export default function ProjectsPage() {
     outlinePass.hiddenEdgeColor.set(0xffffff);
     composer.addPass(outlinePass);
 
-    // Add gamma correction to fix brightness
     const gammaPass = new ShaderPass(GammaCorrectionShader);
     composer.addPass(gammaPass);
-
-    // Make sure the output goes to screen
     gammaPass.renderToScreen = true;
 
-    // Collect all meshes from paper stack for outlining
     const paperMeshes = [];
     if (paperStack) {
       paperStack.traverse((child) => {
-        if (child.isMesh) {
-          paperMeshes.push(child);
-        }
+        if (child.isMesh) paperMeshes.push(child);
       });
     }
 
-    // Collect all meshes from sticky note for outlining
+    // Store original transforms for each paper so we can animate back to them
+    const paperOrigins = paperMeshes.map((m) => ({
+      y: m.position.y,
+      ry: m.rotation.y,
+    }));
+
+    // Target transforms when hovered — only top 2 papers float and fan
+    const paperTargets = paperMeshes.map((m, i) => {
+      if (i < paperMeshes.length - 2) {
+        // Bottom papers stay put
+        return { y: m.position.y, ry: m.rotation.y };
+      }
+      const t2 = i - (paperMeshes.length - 2); // 0 or 1
+      return {
+        y: m.position.y + 0.35 + t2 * 0.2,
+        ry: m.rotation.y + (t2 === 0 ? -0.2 : 0.2),
+      };
+    });
+
+    // 0 = resting, 1 = fully hovered
+    let paperHoverProgress = 0;
+
     const stickyMeshes = [];
     if (stickyNote) {
       stickyNote.traverse((child) => {
-        if (child.isMesh) {
-          stickyMeshes.push(child);
-        }
+        if (child.isMesh) stickyMeshes.push(child);
       });
     }
 
-    // Collect all meshes from laptop for outlining
     const laptopMeshes = [];
     if (laptop) {
       laptop.traverse((child) => {
-        if (child.isMesh) {
-          laptopMeshes.push(child);
-        }
+        if (child.isMesh) laptopMeshes.push(child);
       });
     }
 
-    // Raycaster for hover detection
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-
-    // Track currently hovered object
     let currentHovered = null;
 
-    // Mouse move handler
+    // World anchor positions for each label (above each object)
+    const labelAnchors = {
+      laptop: new THREE.Vector3(0, 0, 0),
+      paper: new THREE.Vector3(-3, 0.4, 0.2),
+      sticky: new THREE.Vector3(2.8, 0.4, 0.5),
+    };
+    const labelTexts = {
+      laptop: "Projects",
+      paper: "Certifications",
+      sticky: "Contact",
+    };
+
     const onMouseMove = (event) => {
-      // Calculate mouse position in normalized coordinates
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-      // Update the picking ray
       raycaster.setFromCamera(mouse, camera);
 
-      // Check all meshes from all groups
+      // Only allow hover effects once PROJECTS text is off screen
+      if (scrollProgress < 0.3) {
+        outlinePass.selectedObjects = [];
+        currentHovered = null;
+        renderer.domElement.style.cursor = "default";
+        labelPosRef.current = null;
+        setHoverLabel(null);
+        return;
+      }
+
       const allMeshes = [...paperMeshes, ...stickyMeshes, ...laptopMeshes];
       const intersects = raycaster.intersectObjects(allMeshes);
 
       if (intersects.length > 0) {
         const hoveredMesh = intersects[0].object;
-
-        // Find which group this mesh belongs to
         let hoveredGroup = null;
-        if (paperMeshes.includes(hoveredMesh)) {
-          hoveredGroup = "paper";
-        } else if (stickyMeshes.includes(hoveredMesh)) {
-          hoveredGroup = "sticky";
-        } else if (laptopMeshes.includes(hoveredMesh)) {
-          hoveredGroup = "laptop";
-        }
+        if (paperMeshes.includes(hoveredMesh)) hoveredGroup = "paper";
+        else if (stickyMeshes.includes(hoveredMesh)) hoveredGroup = "sticky";
+        else if (laptopMeshes.includes(hoveredMesh)) hoveredGroup = "laptop";
 
         if (currentHovered !== hoveredGroup) {
-          // Clear previous outline
           outlinePass.selectedObjects = [];
-
-          // Set new outline based on what's hovered
-          if (hoveredGroup === "paper") {
+          if (hoveredGroup === "paper")
             outlinePass.selectedObjects = paperMeshes;
-          } else if (hoveredGroup === "sticky") {
+          else if (hoveredGroup === "sticky")
             outlinePass.selectedObjects = stickyMeshes;
-          } else if (hoveredGroup === "laptop") {
+          else if (hoveredGroup === "laptop")
             outlinePass.selectedObjects = laptopMeshes;
-          }
-
           currentHovered = hoveredGroup;
         }
+
+        renderer.domElement.style.cursor =
+          hoveredGroup === "laptop" ? "pointer" : "default";
+        labelPosRef.current = hoveredGroup ? { group: hoveredGroup } : null;
       } else if (currentHovered !== null) {
-        // No intersection, clear outline
         outlinePass.selectedObjects = [];
         currentHovered = null;
+        renderer.domElement.style.cursor = "default";
+        labelPosRef.current = null;
+        setHoverLabel(null);
       }
     };
 
-    // Add mouse move listener
-    renderer.domElement.addEventListener("mousemove", onMouseMove);
+    // Click laptop to animate zoom-in then trigger glitch
+    const onClick = (event) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(laptopMeshes);
+      if (intersects.length > 0 && scrollProgress >= 0.3) {
+        syncTargetRef(1);
+      }
+    };
 
-    // Handle window resize for composer
+    renderer.domElement.addEventListener("mousemove", onMouseMove);
+    renderer.domElement.addEventListener("click", onClick);
+
     const onResize = () => {
       const nw = el.clientWidth,
         nh = el.clientHeight;
@@ -220,7 +247,6 @@ export default function ProjectsPage() {
       renderer.setSize(nw, nh);
       composer.setSize(nw, nh);
     };
-
     window.addEventListener("resize", onResize);
 
     const camStart = new THREE.Vector3(0, 3.2, 8);
@@ -325,7 +351,6 @@ export default function ProjectsPage() {
 
     let raf,
       t = 0;
-    const DESK_Y = 0;
     const animate = () => {
       raf = requestAnimationFrame(animate);
       t += 0.008;
@@ -336,14 +361,35 @@ export default function ProjectsPage() {
       camera.lookAt(
         new THREE.Vector3().lerpVectors(lookStart, lookEnd, scrollProgress),
       );
-      // Removed the laptop movement animation
-      // if (laptop) laptop.position.y = DESK_Y + 0.05 + Math.sin(t * 0.6) * 0.02;
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
       if (floorLampLight)
         floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
 
-      // Render using composer
+      // Animate paper stack float/fan on hover
+      const paperHovered = currentHovered === "paper";
+      paperHoverProgress +=
+        ((paperHovered ? 1 : 0) - paperHoverProgress) * 0.08;
+      paperMeshes.forEach((m, i) => {
+        m.position.y =
+          paperOrigins[i].y +
+          (paperTargets[i].y - paperOrigins[i].y) * paperHoverProgress;
+        m.rotation.y =
+          paperOrigins[i].ry +
+          (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
+      });
+
       composer.render();
+
+      // Project 3D anchor to 2D screen for hover label
+      if (labelPosRef.current) {
+        const { group } = labelPosRef.current;
+        const anchor = labelAnchors[group].clone();
+        anchor.project(camera);
+        const rect = renderer.domElement.getBoundingClientRect();
+        const x = (anchor.x * 0.5 + 0.5) * rect.width + rect.left;
+        const y = (-anchor.y * 0.5 + 0.5) * rect.height + rect.top;
+        setHoverLabel({ text: labelTexts[group], x, y });
+      }
     };
     animate();
 
@@ -351,6 +397,7 @@ export default function ProjectsPage() {
       cancelAnimationFrame(raf);
       observer.disconnect();
       renderer.domElement.removeEventListener("mousemove", onMouseMove);
+      renderer.domElement.removeEventListener("click", onClick);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
@@ -373,6 +420,33 @@ export default function ProjectsPage() {
         onBack={handleBack}
         onShutdown={handleShutdown}
       />
+
+      {/* Hover label — 2D HTML projected from 3D position */}
+      {hoverLabel && (
+        <div
+          style={{
+            position: "fixed",
+            left: hoverLabel.x,
+            top: hoverLabel.y,
+            transform: "translate(-50%, -100%)",
+            pointerEvents: "none",
+            zIndex: 50,
+            color: "#db9834",
+            fontSize: "13px",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            fontFamily: "system-ui, sans-serif",
+            textShadow: "0 0 12px rgba(219,152,52,0.6)",
+            background: "rgba(13,15,24,0.7)",
+            padding: "4px 10px",
+            borderRadius: "4px",
+            border: "1px solid rgba(219,152,52,0.3)",
+            whiteSpace: "nowrap",
+          }}>
+          {hoverLabel.text}
+        </div>
+      )}
 
       <div
         ref={sectionRef}
