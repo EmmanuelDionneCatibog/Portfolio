@@ -331,49 +331,5 @@ export function createRoomScene(scene) {
     frame3.add(star);
   });
 
-  // ── Floor lamp ───────────────────────────────────────────────────────────
-  const floorLampGroup = new THREE.Group();
-  floorLampGroup.position.set(9.5, floorY, -1.6);
-  scene.add(floorLampGroup);
-
-  const flLegMat = new THREE.MeshStandardMaterial({
-    color: 0x333344,
-    roughness: 0.3,
-    metalness: 0.85,
-  });
-  const flShadeMat = new THREE.MeshStandardMaterial({
-    color: 0xf5e6c8,
-    roughness: 0.6,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.85,
-  });
-  const flBulbMat = new THREE.MeshStandardMaterial({
-    color: 0xfffce0,
-    emissive: 0xfff5a0,
-    emissiveIntensity: 1.4,
-  });
-
-  floorLampGroup.add(cyl(0.28, 0.35, 0.08, 20, flLegMat, 0, 0.04, 0));
-  floorLampGroup.add(cyl(0.038, 0.038, 4.2, 12, flLegMat, 0, 2.18, 0));
-  const flShade = new THREE.Mesh(
-    new THREE.ConeGeometry(0.55, 0.6, 24, 1, true),
-    flShadeMat,
-  );
-  flShade.rotation.x = Math.PI;
-  flShade.position.y = 4.5;
-  floorLampGroup.add(flShade);
-  floorLampGroup.add(cyl(0.08, 0.08, 0.04, 16, flLegMat, 0, 4.82, 0));
-  const flBulb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.1, 12, 12),
-    flBulbMat,
-  );
-  flBulb.position.y = 4.45;
-  floorLampGroup.add(flBulb);
-
-  const floorLampLight = new THREE.PointLight(0xfff3d0, 1.4, 10, 1.5);
-  floorLampLight.position.set(9.5, floorY + 4.4, -1.6);
-  scene.add(floorLampLight);
-
-  return { floorLampLight, floorY, backWallZ, wallH, wallW };
+  return { floorY, backWallZ, wallH, wallW };
 }

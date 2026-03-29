@@ -91,8 +91,7 @@ export default function ProjectsPage() {
       folderTopPivot,
     } = createDeskScene(scene);
 
-    const { floorLampLight, floorY, backWallZ, wallH, wallW } =
-      createRoomScene(scene);
+    const { floorY, backWallZ, wallH, wallW } = createRoomScene(scene);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
@@ -371,8 +370,6 @@ export default function ProjectsPage() {
         new THREE.Vector3().lerpVectors(lookStart, lookEnd, scrollProgress),
       );
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
-      if (floorLampLight)
-        floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
 
       const paperHovered = currentHovered === "paper";
       paperHoverProgress +=
