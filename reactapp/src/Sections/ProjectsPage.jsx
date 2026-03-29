@@ -9,6 +9,7 @@ import GlitchOverlay from "./GlitchOverlay";
 import WindowsDesktop from "./WindowsDesktop";
 import { createDeskScene } from "./Desk";
 import { createRoomScene } from "./Room";
+import CertificateCarousel from "./CertificateCarousel";
 
 export default function ProjectsPage() {
   const mountRef = useRef(null);
@@ -23,6 +24,7 @@ export default function ProjectsPage() {
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
+  const [showCarousel, setShowCarousel] = useState(false);
   const [hoverLabel, setHoverLabel] = useState(null);
   const labelPosRef = useRef(null);
 
@@ -166,7 +168,6 @@ export default function ProjectsPage() {
     const mouse = new THREE.Vector2();
     let currentHovered = null;
 
-    // World anchor positions for each label
     const labelAnchors = {
       laptop: new THREE.Vector3(0, 0, 0),
       paper: new THREE.Vector3(-3, 0.4, 0.2),
@@ -178,13 +179,15 @@ export default function ProjectsPage() {
       folder: "Work Experience",
     };
 
+    let scrollProgress = 0;
+    let targetProgress = 0;
+
     const onMouseMove = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
 
-      // Only allow hover effects once PROJECTS text is off screen
       if (scrollProgress < 0.3) {
         outlinePass.selectedObjects = [];
         currentHovered = null;
@@ -227,15 +230,20 @@ export default function ProjectsPage() {
       }
     };
 
-    // Click laptop to animate zoom-in then trigger glitch
     const onClick = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(laptopMeshes);
-      if (intersects.length > 0 && scrollProgress >= 0.3) {
+
+      const laptopIntersects = raycaster.intersectObjects(laptopMeshes);
+      if (laptopIntersects.length > 0 && scrollProgress >= 0.3) {
         syncTargetRef(1);
+      }
+
+      const paperIntersects = raycaster.intersectObjects(paperMeshes);
+      if (paperIntersects.length > 0 && scrollProgress >= 0.3) {
+        setShowCarousel(true);
       }
     };
 
@@ -257,8 +265,6 @@ export default function ProjectsPage() {
     const lookStart = new THREE.Vector3(0, 0.2, 0);
     const lookEnd = new THREE.Vector3(0, 1.52, -1.5);
 
-    let targetProgress = 0;
-    let scrollProgress = 0;
     let glitchTriggered = false;
     let sectionActive = false;
 
@@ -368,7 +374,6 @@ export default function ProjectsPage() {
       if (floorLampLight)
         floorLampLight.intensity = 1.4 + Math.sin(t * 2.3 + 1) * 0.12;
 
-      // Animate paper float
       const paperHovered = currentHovered === "paper";
       paperHoverProgress +=
         ((paperHovered ? 1 : 0) - paperHoverProgress) * 0.08;
@@ -381,7 +386,6 @@ export default function ProjectsPage() {
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
 
-      // Animate folder open
       const folderHovered = currentHovered === "folder";
       folderHoverProgress +=
         ((folderHovered ? 1 : 0) - folderHoverProgress) * 0.07;
@@ -391,7 +395,6 @@ export default function ProjectsPage() {
 
       composer.render();
 
-      // Project 3D anchor to 2D screen for hover label
       if (labelPosRef.current) {
         const { group } = labelPosRef.current;
         const anchor = labelAnchors[group].clone();
@@ -432,7 +435,11 @@ export default function ProjectsPage() {
         onShutdown={handleShutdown}
       />
 
-      {/* Hover label */}
+      <CertificateCarousel
+        isOpen={showCarousel}
+        onClose={() => setShowCarousel(false)}
+      />
+
       {hoverLabel && (
         <div
           style={{
