@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-// Helper functions
 const box = (
   gw,
   gh,
@@ -45,7 +44,7 @@ const cyl = (
 export function createDeskScene(scene) {
   const DESK_Y = 0;
 
-  // ─── Materials ───────────────────────────────────────────────────────────
+  // Materials
   const bodyMat = new THREE.MeshStandardMaterial({
     color: 0x1a1a2a,
     roughness: 0.3,
@@ -142,7 +141,7 @@ export function createDeskScene(scene) {
     side: THREE.DoubleSide,
   });
 
-  // ─── Desk ────────────────────────────────────────────────────────────────
+  // Desk
   const deskGroup = new THREE.Group();
   scene.add(deskGroup);
   deskGroup.add(box(9, 0.18, 4, deskMat, 0, DESK_Y - 0.09, 0));
@@ -155,7 +154,7 @@ export function createDeskScene(scene) {
     deskGroup.add(box(0.2, 2.8, 0.2, deskLegMat, x, DESK_Y - 0.09 - 1.4, z));
   });
 
-  // ─── Laptop ──────────────────────────────────────────────────────────────
+  // Laptop
   const laptop = new THREE.Group();
   laptop.position.set(0, DESK_Y + 0.05, 0);
   scene.add(laptop);
@@ -253,9 +252,9 @@ export function createDeskScene(scene) {
   );
   lid.add(box(2.75, 0.008, 1.66, screenMat, 0, 0.063, 1.1));
 
-  // ─── Lamp ────────────────────────────────────────────────────────────────
+  // Lamp
   const lamp = new THREE.Group();
-  lamp.position.set(3.6, DESK_Y, -0.4);
+  lamp.position.set(3.6, DESK_Y, -1.2);
   scene.add(lamp);
   lamp.add(cyl(0.3, 0.45, 0.07, 24, lampBaseMat, 0, 0.035, 0));
   lamp.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 0.11, 0));
@@ -306,14 +305,14 @@ export function createDeskScene(scene) {
     0.3,
     1.2,
   );
-  lampLight.position.set(3.8, 3.8, 0.5);
+  lampLight.position.set(3.8, 3.8, -0.3);
   lampLight.target.position.set(1.5, 0, 0.2);
   lampLight.castShadow = true;
   lampLight.shadow.mapSize.set(1024, 1024);
   scene.add(lampLight);
   scene.add(lampLight.target);
 
-  // ─── Plant ───────────────────────────────────────────────────────────────
+  // Plant
   const plant = new THREE.Group();
   plant.position.set(-2.7, DESK_Y, -1);
   scene.add(plant);
@@ -596,7 +595,7 @@ export function createDeskScene(scene) {
     ),
   );
 
-  // ─── Paper Stack (Left Side) ─────────────────────────────────────────
+  // Paper Stack
   const paperStack = new THREE.Group();
   const papers = [
     {
@@ -649,49 +648,7 @@ export function createDeskScene(scene) {
   });
   scene.add(paperStack);
 
-  // ─── Sticky Note (Right Side) ─────────────────────────────────────────
-  const stickyNote = new THREE.Group();
-  const stickyMat = new THREE.MeshStandardMaterial({
-    color: 0xfff176,
-    roughness: 0.9,
-  });
-  const stickyMesh = box(
-    0.38,
-    0.005,
-    0.38,
-    stickyMat,
-    2.8,
-    DESK_Y,
-    0.5,
-    0,
-    0.05,
-    0,
-  );
-  stickyNote.add(stickyMesh);
-
-  const lineMat = new THREE.MeshStandardMaterial({
-    color: 0x888888,
-    transparent: true,
-    opacity: 0.3,
-  });
-  [0.05, 0.11, 0.17].forEach((lz) => {
-    const line = box(
-      0.28,
-      0.004,
-      0.012,
-      lineMat,
-      2.8,
-      DESK_Y + 0.043,
-      0.5 - 0.08 + lz,
-      0,
-      0.05,
-      0,
-    );
-    stickyNote.add(line);
-  });
-  scene.add(stickyNote);
-
-  // ─── Pencil holder ────────────────────────────────────────────────
+  // Pencil holder
   const holderGroup = new THREE.Group();
   holderGroup.position.set(-2.2, DESK_Y + 0.04, -0.7);
   scene.add(holderGroup);
@@ -727,5 +684,116 @@ export function createDeskScene(scene) {
     holderGroup.add(pencil);
   }
 
-  return { deskGroup, laptop, lampLight, screenMat, paperStack, stickyNote };
+  // Folder
+  const folderGroup = new THREE.Group();
+  folderGroup.position.set(3.0, DESK_Y, 0.3);
+  scene.add(folderGroup);
+
+  const folderMat = new THREE.MeshStandardMaterial({
+    color: 0xc8924a,
+    roughness: 0.85,
+    metalness: 0.0,
+  });
+  const folderInnerMat = new THREE.MeshStandardMaterial({
+    color: 0xa06828,
+    roughness: 0.9,
+    metalness: 0.0,
+    side: THREE.DoubleSide,
+  });
+
+  const fw = 1.2;
+  const fh = 0.008;
+  const fd = 1.4;
+
+  folderGroup.add(box(fw, fh, fd, folderMat, 0, fh / 2, 0));
+
+  const tabW = 0.1;
+  const tabD = fd * 0.3;
+  folderGroup.add(
+    box(
+      tabW,
+      fh,
+      tabD,
+      folderMat,
+      fw / 2 + tabW / 2,
+      fh / 2,
+      -(fd / 2 - tabD / 2),
+    ),
+  );
+
+  const folderTopPivot = new THREE.Group();
+  folderTopPivot.position.set(-fw / 2, fh, 0);
+  folderGroup.add(folderTopPivot);
+
+  const coverShape = new THREE.Shape();
+  coverShape.moveTo(0, fd / 2);
+  coverShape.lineTo(fw - tabW, fd / 2);
+  coverShape.lineTo(fw - tabW, fd / 2 - tabD);
+  coverShape.lineTo(fw, fd / 2 - tabD);
+  coverShape.lineTo(fw, -fd / 2);
+  coverShape.lineTo(0, -fd / 2);
+  coverShape.lineTo(0, fd / 2);
+
+  const extrudeSettings = { depth: fh, bevelEnabled: false }; // Uses the thinner fh
+
+  const topCoverGeo = new THREE.ExtrudeGeometry(coverShape, extrudeSettings);
+  topCoverGeo.rotateX(-Math.PI / 2);
+  topCoverGeo.translate(0, fh, 0);
+
+  const topCover = new THREE.Mesh(topCoverGeo, folderMat);
+  topCover.castShadow = true;
+  topCover.receiveShadow = true;
+  folderTopPivot.add(topCover);
+
+  const innerShape = new THREE.Shape();
+  innerShape.moveTo(0, fd / 2);
+  innerShape.lineTo(fw - tabW, fd / 2);
+  innerShape.lineTo(fw - tabW, fd / 2 - tabD);
+  innerShape.lineTo(fw, fd / 2 - tabD);
+  innerShape.lineTo(fw, -fd / 2);
+  innerShape.lineTo(0, -fd / 2);
+  innerShape.lineTo(0, fd / 2);
+
+  const innerGeo = new THREE.ExtrudeGeometry(innerShape, {
+    depth: 0.002,
+    bevelEnabled: false,
+  });
+  innerGeo.rotateX(-Math.PI / 2);
+  innerGeo.translate(0, 0.0005, 0);
+
+  const topInner = new THREE.Mesh(innerGeo, folderInnerMat);
+  folderTopPivot.add(topInner);
+
+  // Paper inside
+  const paperInsideMat = new THREE.MeshStandardMaterial({
+    color: 0xf5f0e8,
+    roughness: 0.9,
+  });
+  const paperWidth = fw - 0.3;
+  const paperDepth = fd - 0.3;
+  const paperThickness = 0.002;
+
+  const paperInside = box(
+    paperWidth,
+    paperThickness,
+    paperDepth,
+    paperInsideMat,
+    0,
+    fh + paperThickness / 2,
+    0,
+    0,
+    0,
+    0,
+  );
+  folderGroup.add(paperInside);
+
+  return {
+    deskGroup,
+    laptop,
+    lampLight,
+    screenMat,
+    paperStack,
+    folderGroup,
+    folderTopPivot,
+  };
 }

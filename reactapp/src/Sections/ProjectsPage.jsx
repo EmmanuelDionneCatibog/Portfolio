@@ -23,7 +23,7 @@ export default function ProjectsPage() {
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
-  const [hoverLabel, setHoverLabel] = useState(null); // { text, x, y }
+  const [hoverLabel, setHoverLabel] = useState(null);
   const labelPosRef = useRef(null);
 
   const triggerGlitch = () => {
@@ -79,8 +79,15 @@ export default function ProjectsPage() {
     renderer.toneMappingExposure = 1.2;
     el.appendChild(renderer.domElement);
 
-    const { deskGroup, laptop, lampLight, screenMat, paperStack, stickyNote } =
-      createDeskScene(scene);
+    const {
+      deskGroup,
+      laptop,
+      lampLight,
+      screenMat,
+      paperStack,
+      folderGroup,
+      folderTopPivot,
+    } = createDeskScene(scene);
 
     const { floorLampLight, floorY, backWallZ, wallH, wallW } =
       createRoomScene(scene);
@@ -129,10 +136,9 @@ export default function ProjectsPage() {
 
     const paperTargets = paperMeshes.map((m, i) => {
       if (i < paperMeshes.length - 2) {
-        // Bottom papers stay put
         return { y: m.position.y, ry: m.rotation.y };
       }
-      const t2 = i - (paperMeshes.length - 2); // 0 or 1
+      const t2 = i - (paperMeshes.length - 2);
       return {
         y: m.position.y + 0.35 + t2 * 0.2,
         ry: m.rotation.y + (t2 === 0 ? -0.2 : 0.2),
@@ -140,18 +146,19 @@ export default function ProjectsPage() {
     });
 
     let paperHoverProgress = 0;
-
-    const stickyMeshes = [];
-    if (stickyNote) {
-      stickyNote.traverse((child) => {
-        if (child.isMesh) stickyMeshes.push(child);
-      });
-    }
+    let folderHoverProgress = 0;
 
     const laptopMeshes = [];
     if (laptop) {
       laptop.traverse((child) => {
         if (child.isMesh) laptopMeshes.push(child);
+      });
+    }
+
+    const folderMeshes = [];
+    if (folderGroup) {
+      folderGroup.traverse((child) => {
+        if (child.isMesh) folderMeshes.push(child);
       });
     }
 
@@ -163,12 +170,12 @@ export default function ProjectsPage() {
     const labelAnchors = {
       laptop: new THREE.Vector3(0, 0, 0),
       paper: new THREE.Vector3(-3, 0.4, 0.2),
-      sticky: new THREE.Vector3(2.8, 0.4, 0.5),
+      folder: new THREE.Vector3(3, 0.4, 0.6),
     };
     const labelTexts = {
       laptop: "Projects",
       paper: "Certifications",
-      sticky: "Contact",
+      folder: "Work Experience",
     };
 
     const onMouseMove = (event) => {
@@ -187,24 +194,24 @@ export default function ProjectsPage() {
         return;
       }
 
-      const allMeshes = [...paperMeshes, ...stickyMeshes, ...laptopMeshes];
+      const allMeshes = [...paperMeshes, ...laptopMeshes, ...folderMeshes];
       const intersects = raycaster.intersectObjects(allMeshes);
 
       if (intersects.length > 0) {
         const hoveredMesh = intersects[0].object;
         let hoveredGroup = null;
         if (paperMeshes.includes(hoveredMesh)) hoveredGroup = "paper";
-        else if (stickyMeshes.includes(hoveredMesh)) hoveredGroup = "sticky";
         else if (laptopMeshes.includes(hoveredMesh)) hoveredGroup = "laptop";
+        else if (folderMeshes.includes(hoveredMesh)) hoveredGroup = "folder";
 
         if (currentHovered !== hoveredGroup) {
           outlinePass.selectedObjects = [];
           if (hoveredGroup === "paper")
             outlinePass.selectedObjects = paperMeshes;
-          else if (hoveredGroup === "sticky")
-            outlinePass.selectedObjects = stickyMeshes;
           else if (hoveredGroup === "laptop")
             outlinePass.selectedObjects = laptopMeshes;
+          else if (hoveredGroup === "folder")
+            outlinePass.selectedObjects = folderMeshes;
           currentHovered = hoveredGroup;
         }
 
@@ -373,6 +380,14 @@ export default function ProjectsPage() {
           paperOrigins[i].ry +
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
+
+      // Animate folder open
+      const folderHovered = currentHovered === "folder";
+      folderHoverProgress +=
+        ((folderHovered ? 1 : 0) - folderHoverProgress) * 0.07;
+      if (folderTopPivot) {
+        folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
+      }
 
       composer.render();
 
