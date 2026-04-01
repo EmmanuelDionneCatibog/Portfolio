@@ -5,11 +5,11 @@ import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { OutlinePass } from "three/examples/jsm/postprocessing/OutlinePass.js";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader.js";
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import GlitchOverlay from "./GlitchOverlay";
+import GlitchOverlay from "../Components/GlitchOverlay";
 import WindowsDesktop from "./WindowsDesktop";
-import { createDeskScene } from "./Desk";
-import { createRoomScene } from "./Room";
-import CertificateCarousel from "./CertificateCarousel";
+import { createDeskScene } from "../Components/Desk";
+import { createRoomScene } from "../Components/Room";
+import CertificateCarousel from "../Components/CertificateCarousel";
 
 export default function ProjectsPage() {
   const mountRef = useRef(null);

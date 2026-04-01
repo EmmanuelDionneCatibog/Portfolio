@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import FolderIcon from "./FolderIcon";
-import FolderWindow, { VideoPlayerWindow } from "./FolderWindow";
+import FolderIcon from "../Components/FolderIcon";
+import FolderWindow, { VideoPlayerWindow } from "../Components/FolderWindow";
 import { PROJECTS } from "./constants";
 
 export default function WindowsDesktop({ visible, onShutdown }) {
