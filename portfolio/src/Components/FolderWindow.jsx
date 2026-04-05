@@ -141,7 +141,6 @@ export function VideoPlayerWindow({
   }));
   const [size, setSize] = useState({ w: 680, h: 420 });
   const [full, setFull] = useState(false);
-  // minimized state managed externally via onMinimize prop
 
   const onTitleMouseDown = (e) => {
     if (full) return;
@@ -294,7 +293,7 @@ export function VideoPlayerWindow({
   );
 }
 
-// ── MEDIA ROW — reusable thumbnail + label ──
+// MEDIA ROW
 function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
   return (
     <div
@@ -305,7 +304,6 @@ function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
         padding: "8px 0",
         borderBottom: isLast ? "none" : "1px solid rgba(219,152,52,0.07)",
       }}>
-      {/* Thumbnail — fixed 72×72 */}
       <div
         onClick={onClick}
         style={{
@@ -323,7 +321,6 @@ function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
         }}>
         {thumb}
       </div>
-      {/* Label — fills all remaining space */}
       <span
         style={{
           color: "rgba(215,198,172,0.6)",
@@ -339,7 +336,7 @@ function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
   );
 }
 
-// ── FOLDER WINDOW ──
+// FOLDER WINDOW
 export default function FolderWindow({
   project,
   onClose,
@@ -359,7 +356,6 @@ export default function FolderWindow({
   }));
   const [size, setSize] = useState({ w: 760, h: 480 });
   const [full, setFull] = useState(false);
-  // video windows opened via onOpenVideo prop (managed by WindowsDesktop)
 
   const onTitleMouseDown = (e) => {
     if (full) return;
@@ -472,7 +468,7 @@ export default function FolderWindow({
       <VideoThumbnail />
     );
 
-  // Icon thumbnail — circular
+  // Icon thumbnail
   const iconThumb = (
     <div
       style={{
@@ -536,7 +532,6 @@ export default function FolderWindow({
       <ImgPlaceholder label="Screenshot" />
     );
 
-  // Decide left panel rows — if project has video2, show 2 videos instead of screenshot
   const hasVideo2 = !!project.video2;
 
   return (
@@ -648,7 +643,6 @@ export default function FolderWindow({
               onClick={() => project.url && window.open(project.url, "_blank")}
             />
 
-            {/* If video2 exists: show 2 video rows. Otherwise show screenshot + video */}
             {hasVideo2 ? (
               <>
                 <MediaRow
@@ -701,7 +695,6 @@ export default function FolderWindow({
             )}
           </div>
 
-          {/* RIGHT — logo + properties */}
           <div
             style={{
               width: "220px",

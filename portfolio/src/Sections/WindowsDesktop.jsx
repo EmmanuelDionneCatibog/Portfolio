@@ -4,7 +4,6 @@ import FolderWindow, { VideoPlayerWindow } from "../Components/FolderWindow";
 import { PROJECTS } from "./constants";
 
 export default function WindowsDesktop({ visible, onShutdown }) {
-  // windows: { id, type: 'folder'|'video', projIdx?, src?, title?, minimized }
   const [windows, setWindows] = useState([]);
   const [zOrders, setZOrders] = useState([]);
   const [time, setTime] = useState("");
