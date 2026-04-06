@@ -10,17 +10,22 @@ import WindowsDesktop from "./WindowsDesktop";
 import { createDeskScene } from "../Components/Desk";
 import { createRoomScene } from "../Components/Room";
 import CertificateCarousel from "../Components/CertificateCarousel";
+import "../styles/projects-page.css";
 
 const BASE_WIDTH = 1440;
+const BASE_HEIGHT = 900;
 
-function getSceneScale(width) {
-  return Math.max(0.42, Math.min(1, width / BASE_WIDTH));
+function getSceneScale(width, height) {
+  const widthScale = width / BASE_WIDTH;
+  const heightScale = height / BASE_HEIGHT;
+  return Math.max(0.34, Math.min(1, Math.min(widthScale, heightScale)));
 }
 
-function getFov(width) {
-  if (width >= BASE_WIDTH) return 42;
-  const extra = ((BASE_WIDTH - width) / BASE_WIDTH) * 28;
-  return Math.min(42 + extra, 70);
+function getFov(width, height) {
+  const widthRatio = Math.max(0, (BASE_WIDTH - width) / BASE_WIDTH);
+  const heightRatio = Math.max(0, (BASE_HEIGHT - height) / BASE_HEIGHT);
+  const extra = widthRatio * 18 + heightRatio * 24;
+  return Math.min(42 + extra, 76);
 }
 
 // ── Camera path helpers ───────────────────────────────────────────────────
@@ -34,22 +39,39 @@ const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
 const CAM_END_FULL = new THREE.Vector3(0, 1.52, 0.35);
 const LOOK_END_FULL = new THREE.Vector3(0, 1.52, -1.5);
 
-function buildCameraPath(width) {
-  const s = getSceneScale(width);
+function buildCameraPath(width, height) {
+  const s = getSceneScale(width, height);
+  const compactWidth = width < 768;
+  const compactHeight = height < 720;
+  const cameraLift = compactHeight ? 0.16 + (720 - height) / 2200 : 0;
+  const cameraPull = compactWidth ? (768 - width) / 420 : 0;
+  const lookLift = compactHeight ? 0.08 + (720 - height) / 3200 : 0;
+
   return {
-    camStart: CAM_START_FULL.clone().multiplyScalar(s),
-    lookStart: LOOK_START_FULL.clone().multiplyScalar(s),
+    camStart: CAM_START_FULL.clone()
+      .multiplyScalar(s)
+      .add(new THREE.Vector3(0, cameraLift, cameraPull)),
+    lookStart: LOOK_START_FULL.clone()
+      .multiplyScalar(s)
+      .add(new THREE.Vector3(0, lookLift, 0)),
     // camEnd z gets a small fixed offset so the camera sits just in front of
     // the screen surface rather than exactly on the origin at tiny scales.
-    camEnd: new THREE.Vector3(0, CAM_END_FULL.y * s, CAM_END_FULL.z * s),
-    lookEnd: new THREE.Vector3(0, LOOK_END_FULL.y * s, LOOK_END_FULL.z * s),
+    camEnd: new THREE.Vector3(
+      0,
+      CAM_END_FULL.y * s + cameraLift * 0.2,
+      CAM_END_FULL.z * s + cameraPull * 0.08,
+    ),
+    lookEnd: new THREE.Vector3(
+      0,
+      LOOK_END_FULL.y * s + lookLift * 0.18,
+      LOOK_END_FULL.z * s,
+    ),
   };
 }
 
 export default function ProjectsPage() {
   const mountRef = useRef(null);
   const sectionRef = useRef(null);
-  const textRef = useRef(null);
 
   const glitchFiredRef = useRef(false);
   const savedScrollY = useRef(0);
@@ -108,7 +130,7 @@ export default function ProjectsPage() {
     const h = el.clientHeight;
 
     // Initialise path for current viewport
-    const initPath = buildCameraPath(w);
+    const initPath = buildCameraPath(w, h);
     camStartRef.current.copy(initPath.camStart);
     lookStartRef.current.copy(initPath.lookStart);
     camEndRef.current.copy(initPath.camEnd);
@@ -117,7 +139,7 @@ export default function ProjectsPage() {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#25263a");
 
-    const camera = new THREE.PerspectiveCamera(getFov(w), w / h, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(getFov(w, h), w / h, 0.1, 100);
     camera.position.copy(camStartRef.current);
     camera.lookAt(lookStartRef.current);
 
@@ -142,13 +164,13 @@ export default function ProjectsPage() {
 
     const { roomRoot } = createRoomScene(scene);
 
-    const applySceneScale = (width) => {
-      const s = getSceneScale(width);
+    const applySceneScale = (width, height) => {
+      const s = getSceneScale(width, height);
       deskRoot.scale.setScalar(s);
       roomRoot.scale.setScalar(s);
 
       // Rebuild and store camera path so the animation loop picks it up
-      const p = buildCameraPath(width);
+      const p = buildCameraPath(width, height);
       camStartRef.current.copy(p.camStart);
       lookStartRef.current.copy(p.lookStart);
       camEndRef.current.copy(p.camEnd);
@@ -156,7 +178,7 @@ export default function ProjectsPage() {
     };
 
     // Apply initial scale
-    applySceneScale(w);
+    applySceneScale(w, h);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
@@ -256,15 +278,6 @@ export default function ProjectsPage() {
       mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
 
-      if (scrollProgress < 0.3) {
-        outlinePass.selectedObjects = [];
-        currentHovered = null;
-        renderer.domElement.style.cursor = "default";
-        labelPosRef.current = null;
-        setHoverLabel(null);
-        return;
-      }
-
       const intersects = raycaster.intersectObjects([
         ...paperMeshes,
         ...laptopMeshes,
@@ -301,15 +314,8 @@ export default function ProjectsPage() {
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      if (
-        raycaster.intersectObjects(laptopMeshes).length > 0 &&
-        scrollProgress >= 0.3
-      )
-        syncTargetRef(1);
-      if (
-        raycaster.intersectObjects(paperMeshes).length > 0 &&
-        scrollProgress >= 0.3
-      )
+      if (raycaster.intersectObjects(laptopMeshes).length > 0) syncTargetRef(1);
+      if (raycaster.intersectObjects(paperMeshes).length > 0)
         setShowCarousel(true);
     };
 
@@ -324,9 +330,9 @@ export default function ProjectsPage() {
       composer.setSize(nw, nh);
       outlinePass.resolution.set(nw, nh);
       camera.aspect = nw / nh;
-      camera.fov = getFov(nw);
+      camera.fov = getFov(nw, nh);
       camera.updateProjectionMatrix();
-      applySceneScale(nw);
+      applySceneScale(nw, nh);
     };
     window.addEventListener("resize", onResize);
 
@@ -334,8 +340,6 @@ export default function ProjectsPage() {
     let sectionActive = false;
 
     const applyProgress = (p) => {
-      if (textRef.current)
-        textRef.current.style.transform = `translateY(${p * -200}vh)`;
       if (screenMat) {
         screenMat.emissive.setHex(0x2255aa);
         screenMat.emissiveIntensity = Math.max(0, (p - 0.6) / 0.4) * 1.2;
@@ -365,7 +369,6 @@ export default function ProjectsPage() {
         glitchTriggered = false;
         zoomingOutRef.current = false;
         isRestoringRef.current = false;
-        if (textRef.current) textRef.current.style.transform = "translateY(0)";
       }
     };
 
@@ -463,7 +466,7 @@ export default function ProjectsPage() {
       // Hover label — scale local anchor into world space before projecting
       if (labelPosRef.current) {
         const { group } = labelPosRef.current;
-        const s = getSceneScale(el.clientWidth);
+        const s = getSceneScale(el.clientWidth, el.clientHeight);
         const worldAnchor = labelAnchorsLocal[group].clone().multiplyScalar(s);
         worldAnchor.project(camera);
         const rect = renderer.domElement.getBoundingClientRect();
@@ -490,11 +493,6 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <style>{`
-        html, body { scrollbar-width: none; -ms-overflow-style: none; }
-        html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
-      `}</style>
-
       <GlitchOverlay active={glitching} onDone={onGlitchDone} />
       <WindowsDesktop
         visible={showDesktop}
@@ -508,80 +506,19 @@ export default function ProjectsPage() {
 
       {hoverLabel && (
         <div
+          className="projects-hover-label"
           style={{
-            position: "fixed",
-            left: hoverLabel.x,
-            top: hoverLabel.y,
-            transform: "translate(-50%, -100%)",
-            pointerEvents: "none",
-            zIndex: 50,
-            color: "#db9834",
-            fontSize: "clamp(10px, 1.1vw, 13px)",
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontFamily: "system-ui, sans-serif",
-            textShadow: "0 0 12px rgba(219,152,52,0.6)",
-            background: "rgba(13,15,24,0.7)",
-            padding: "clamp(2px,0.4vw,4px) clamp(6px,0.8vw,10px)",
-            borderRadius: "4px",
-            border: "1px solid rgba(219,152,52,0.3)",
-            whiteSpace: "nowrap",
+            "--projects-hover-x": `${hoverLabel.x}px`,
+            "--projects-hover-y": `${hoverLabel.y}px`,
           }}>
           {hoverLabel.text}
         </div>
       )}
 
-      <div
-        ref={sectionRef}
-        style={{
-          width: "100%",
-          height: "100vh",
-          position: "relative",
-          backgroundColor: "#25263a",
-          overflow: "hidden",
-        }}>
-        <div
-          ref={mountRef}
-          style={{
-            position: "absolute",
-            inset: 0,
-            zIndex: 1,
-            width: "100%",
-            height: "100%",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 2,
-            pointerEvents: "none",
-          }}>
-          <span
-            ref={textRef}
-            style={{
-              fontSize: "clamp(48px, 14vw, 220px)",
-              fontWeight: 900,
-              letterSpacing: "-0.02em",
-              color: "transparent",
-              WebkitTextStroke:
-                "clamp(1.5px, 0.28vw, 4px) rgba(219,152,52,0.7)",
-              userSelect: "none",
-              lineHeight: 1,
-              willChange: "transform",
-              transition: "transform 0.05s linear",
-              whiteSpace: "nowrap",
-              maxWidth: "100vw",
-              overflow: "hidden",
-            }}>
-            PROJECTS
-          </span>
-        </div>
+      <div ref={sectionRef} className="projects-page-section">
+        <div ref={mountRef} className="projects-page-canvas" />
       </div>
     </>
   );
 }
+
