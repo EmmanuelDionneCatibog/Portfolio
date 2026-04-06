@@ -23,20 +23,14 @@ export default function CertificateCarousel({ isOpen, onClose }) {
 
   useEffect(() => {
     const handleEsc = (e) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+      if (e.key === "Escape" && isOpen) onClose();
     };
     window.addEventListener("keydown", handleEsc);
     return () => window.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -46,205 +40,233 @@ export default function CertificateCarousel({ isOpen, onClose }) {
 
   const goToPrevious = (e) => {
     e.stopPropagation();
-    setCurrentIndex((prev) =>
-      prev === 0 ? certificates.length - 1 : prev - 1,
-    );
+    setCurrentIndex((p) => (p === 0 ? certificates.length - 1 : p - 1));
   };
-
   const goToNext = (e) => {
     e.stopPropagation();
-    setCurrentIndex((prev) =>
-      prev === certificates.length - 1 ? 0 : prev + 1,
-    );
+    setCurrentIndex((p) => (p === certificates.length - 1 ? 0 : p + 1));
   };
-
   const handleClose = (e) => {
     e.stopPropagation();
     onClose();
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgba(0, 0, 0, 0.92)",
-        backdropFilter: "blur(12px)",
-        zIndex: 1000,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={onClose}>
-      <div
-        style={{
-          position: "relative",
-          maxWidth: "90vw",
-          maxHeight: "90vh",
-          backgroundColor: "rgba(20, 20, 35, 0.6)",
-          borderRadius: "20px",
-          padding: "20px",
-          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-        }}
-        onClick={(e) => e.stopPropagation()}>
-        {/* Title */}
-        <div
-          style={{
-            position: "absolute",
-            top: "24px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "white",
-            background: "rgba(0,0,0,0.6)",
-            padding: "6px 20px",
-            borderRadius: "30px",
-            fontSize: "14px",
-            fontWeight: "500",
-            fontFamily: "system-ui, sans-serif",
-            zIndex: 10,
-            whiteSpace: "nowrap",
-          }}>
-          {certificates[currentIndex].title}
+    <>
+      <style>{`
+        .cc-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.92);
+          backdrop-filter: blur(12px);
+          z-index: 1000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .cc-card {
+          position: relative;
+          /* Card shrinks to fit on any screen with comfortable padding */
+          width:  min(92vw, 960px);
+          max-height: 92vh;
+          background: rgba(20,20,35,0.6);
+          border-radius: clamp(10px, 2vw, 20px);
+          /* Vertical padding for title + counter bars */
+          padding: clamp(52px, 8vh, 72px) clamp(48px, 7vw, 80px) clamp(44px, 6vh, 64px);
+          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-sizing: border-box;
+        }
+        .cc-title {
+          position: absolute;
+          top: clamp(10px, 2vh, 20px);
+          left: 50%;
+          transform: translateX(-50%);
+          color: #fff;
+          background: rgba(0,0,0,0.6);
+          padding: clamp(4px,0.8vh,6px) clamp(12px,2vw,20px);
+          border-radius: 30px;
+          font-size: clamp(11px, 1.2vw, 14px);
+          font-weight: 500;
+          font-family: system-ui, sans-serif;
+          z-index: 10;
+          white-space: nowrap;
+          max-width: 70%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .cc-close {
+          position: absolute;
+          top: clamp(10px, 2vh, 20px);
+          right: clamp(12px, 2vw, 24px);
+          background: rgba(0,0,0,0.6);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: #fff;
+          cursor: pointer;
+          width:  clamp(28px, 3.5vw, 36px);
+          height: clamp(28px, 3.5vw, 36px);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+          padding: 0;
+          font-size: clamp(16px, 2vw, 20px);
+          line-height: 1;
+        }
+        .cc-close:hover { background: rgba(255,255,255,0.15); }
+
+        /* Nav arrows — hidden on very narrow screens, shown via a swipe hint instead */
+        .cc-arrow {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          background: rgba(0,0,0,0.5);
+          border: none;
+          color: #fff;
+          cursor: pointer;
+          width:  clamp(32px, 4.5vw, 50px);
+          height: clamp(32px, 4.5vw, 50px);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          z-index: 10;
+          transition: background 0.15s;
+        }
+        .cc-arrow:hover { background: rgba(0,0,0,0.75); }
+        .cc-arrow-left  { left:  clamp(6px, 1.5vw, 20px); }
+        .cc-arrow-right { right: clamp(6px, 1.5vw, 20px); }
+        .cc-arrow svg {
+          width:  clamp(16px, 2.2vw, 28px);
+          height: clamp(16px, 2.2vw, 28px);
+        }
+
+        .cc-image {
+          display: block;
+          /* Fill the card space minus the arrow gutters */
+          max-width: 100%;
+          max-height: calc(92vh - clamp(52px,8vh,72px) - clamp(44px,6vh,64px));
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          border-radius: clamp(6px, 1vw, 12px);
+        }
+
+        .cc-counter {
+          position: absolute;
+          bottom: clamp(10px, 1.8vh, 20px);
+          left: 50%;
+          transform: translateX(-50%);
+          color: rgba(255,255,255,0.7);
+          background: rgba(0,0,0,0.5);
+          padding: clamp(3px,0.6vh,6px) clamp(10px,1.5vw,14px);
+          border-radius: 30px;
+          font-size: clamp(11px, 1.1vw, 14px);
+          font-family: monospace;
+          z-index: 10;
+          white-space: nowrap;
+        }
+
+        /* Dot indicators for touch / small screens */
+        .cc-dots {
+          position: absolute;
+          bottom: clamp(10px, 1.8vh, 20px);
+          right: clamp(12px, 2vw, 24px);
+          display: flex;
+          gap: clamp(4px, 0.6vw, 6px);
+          z-index: 10;
+        }
+        .cc-dot {
+          width:  clamp(5px, 0.8vw, 7px);
+          height: clamp(5px, 0.8vw, 7px);
+          border-radius: 50%;
+          background: rgba(255,255,255,0.35);
+          transition: background 0.2s;
+        }
+        .cc-dot.active { background: rgba(219,152,52,0.9); }
+      `}</style>
+
+      <div className="cc-overlay" onClick={onClose}>
+        <div className="cc-card" onClick={(e) => e.stopPropagation()}>
+          {/* Title */}
+          <div className="cc-title">{certificates[currentIndex].title}</div>
+
+          {/* Close */}
+          <button className="cc-close" onClick={handleClose}>
+            ×
+          </button>
+
+          {/* Prev arrow */}
+          <button
+            className="cc-arrow cc-arrow-left"
+            onClick={goToPrevious}
+            aria-label="Previous">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M15 18L9 12L15 6"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          {/* Certificate image */}
+          <img
+            className="cc-image"
+            src={certificates[currentIndex].src}
+            alt={certificates[currentIndex].alt}
+            onError={(e) => {
+              e.target.src =
+                "https://placehold.co/800x600/2a2a3a/db9834?text=Certificate+Not+Found";
+            }}
+          />
+
+          {/* Next arrow */}
+          <button
+            className="cc-arrow cc-arrow-right"
+            onClick={goToNext}
+            aria-label="Next">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M9 18L15 12L9 6"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          <div className="cc-counter">
+            {currentIndex + 1} / {certificates.length}
+          </div>
+
+          <div className="cc-dots">
+            {certificates.map((_, i) => (
+              <div
+                key={i}
+                className={`cc-dot${i === currentIndex ? " active" : ""}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentIndex(i);
+                }}
+              />
+            ))}
+          </div>
         </div>
-
-        {/* Close Button */}
-        <button
-          onClick={handleClose}
-          style={{
-            position: "absolute",
-            top: "24px",
-            right: "30px",
-            background: "rgba(0,0,0,0.6)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            color: "white",
-            fontSize: "20px",
-            cursor: "pointer",
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 10,
-            padding: 0,
-            margin: 0,
-            lineHeight: "36px",
-          }}>
-          ×
-        </button>
-
-        {/* Previous Button */}
-        <button
-          onClick={goToPrevious}
-          style={{
-            position: "absolute",
-            left: "30px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            border: "none",
-            color: "white",
-            cursor: "pointer",
-            width: "50px",
-            height: "50px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-            margin: 0,
-          }}>
-          <svg
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M15 18L9 12L15 6"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        {/* Next Button */}
-        <button
-          onClick={goToNext}
-          style={{
-            position: "absolute",
-            right: "30px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            background: "rgba(0,0,0,0.5)",
-            border: "none",
-            color: "white",
-            cursor: "pointer",
-            width: "50px",
-            height: "50px",
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 0,
-            margin: 0,
-          }}>
-          <svg
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M9 18L15 12L9 6"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        {/* Image Counter */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "24px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            color: "rgba(255,255,255,0.7)",
-            background: "rgba(0,0,0,0.5)",
-            padding: "6px 14px",
-            borderRadius: "30px",
-            fontSize: "14px",
-            fontFamily: "monospace",
-            zIndex: 10,
-          }}>
-          {currentIndex + 1} / {certificates.length}
-        </div>
-
-        {/* Image */}
-        <img
-          src={certificates[currentIndex].src}
-          alt={certificates[currentIndex].alt}
-          style={{
-            maxWidth: "80vw",
-            maxHeight: "75vh",
-            objectFit: "contain",
-            borderRadius: "12px",
-            display: "block",
-          }}
-          onError={(e) => {
-            e.target.src =
-              "https://placehold.co/800x600/2a2a3a/db9834?text=Certificate+Not+Found";
-          }}
-        />
       </div>
-    </div>
+    </>
   );
 }

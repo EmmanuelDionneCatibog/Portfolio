@@ -11,16 +11,59 @@ import { createDeskScene } from "../Components/Desk";
 import { createRoomScene } from "../Components/Room";
 import CertificateCarousel from "../Components/CertificateCarousel";
 
+const BASE_WIDTH = 1440;
+
+function getSceneScale(width) {
+  return Math.max(0.42, Math.min(1, width / BASE_WIDTH));
+}
+
+function getFov(width) {
+  if (width >= BASE_WIDTH) return 42;
+  const extra = ((BASE_WIDTH - width) / BASE_WIDTH) * 28;
+  return Math.min(42 + extra, 70);
+}
+
+// ── Camera path helpers ───────────────────────────────────────────────────
+// The desk/room root is scaled by `s` around world-origin.
+// Every world-space point on the scene also moves by `s`, so the camera
+// end-point (fly-into-laptop) must be scaled the same way.
+//
+// Full-size (s=1) values that work at 1440px:
+const CAM_START_FULL = new THREE.Vector3(0, 3.2, 8);
+const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
+const CAM_END_FULL = new THREE.Vector3(0, 1.52, 0.35);
+const LOOK_END_FULL = new THREE.Vector3(0, 1.52, -1.5);
+
+function buildCameraPath(width) {
+  const s = getSceneScale(width);
+  return {
+    camStart: CAM_START_FULL.clone().multiplyScalar(s),
+    lookStart: LOOK_START_FULL.clone().multiplyScalar(s),
+    // camEnd z gets a small fixed offset so the camera sits just in front of
+    // the screen surface rather than exactly on the origin at tiny scales.
+    camEnd: new THREE.Vector3(0, CAM_END_FULL.y * s, CAM_END_FULL.z * s),
+    lookEnd: new THREE.Vector3(0, LOOK_END_FULL.y * s, LOOK_END_FULL.z * s),
+  };
+}
+
 export default function ProjectsPage() {
   const mountRef = useRef(null);
   const sectionRef = useRef(null);
   const textRef = useRef(null);
+
   const glitchFiredRef = useRef(false);
   const savedScrollY = useRef(0);
   const isRestoringRef = useRef(false);
   const resetProgressRef = useRef(null);
   const zoomingOutRef = useRef(false);
   const targetProgressRef = useRef(0);
+
+  // Live camera-path refs — updated on resize so the animation loop always
+  // reads the correct scaled values without restarting.
+  const camStartRef = useRef(CAM_START_FULL.clone());
+  const lookStartRef = useRef(LOOK_START_FULL.clone());
+  const camEndRef = useRef(CAM_END_FULL.clone());
+  const lookEndRef = useRef(LOOK_END_FULL.clone());
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
@@ -29,8 +72,7 @@ export default function ProjectsPage() {
   const labelPosRef = useRef(null);
 
   const triggerGlitch = () => {
-    if (glitchFiredRef.current) return;
-    if (isRestoringRef.current) return;
+    if (glitchFiredRef.current || isRestoringRef.current) return;
     glitchFiredRef.current = true;
     savedScrollY.current = window.scrollY;
     setGlitching(true);
@@ -62,15 +104,22 @@ export default function ProjectsPage() {
     const el = mountRef.current;
     if (!el) return;
 
-    const w = el.clientWidth,
-      h = el.clientHeight;
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+
+    // Initialise path for current viewport
+    const initPath = buildCameraPath(w);
+    camStartRef.current.copy(initPath.camStart);
+    lookStartRef.current.copy(initPath.lookStart);
+    camEndRef.current.copy(initPath.camEnd);
+    lookEndRef.current.copy(initPath.lookEnd);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color("#25263a");
 
-    const camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
-    camera.position.set(0, 2.8, 7);
-    camera.lookAt(0, 0.5, 0);
+    const camera = new THREE.PerspectiveCamera(getFov(w), w / h, 0.1, 100);
+    camera.position.copy(camStartRef.current);
+    camera.lookAt(lookStartRef.current);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -82,7 +131,7 @@ export default function ProjectsPage() {
     el.appendChild(renderer.domElement);
 
     const {
-      deskGroup,
+      sceneRoot: deskRoot,
       laptop,
       lampLight,
       screenMat,
@@ -91,7 +140,23 @@ export default function ProjectsPage() {
       folderTopPivot,
     } = createDeskScene(scene);
 
-    const { floorY, backWallZ, wallH, wallW } = createRoomScene(scene);
+    const { roomRoot } = createRoomScene(scene);
+
+    const applySceneScale = (width) => {
+      const s = getSceneScale(width);
+      deskRoot.scale.setScalar(s);
+      roomRoot.scale.setScalar(s);
+
+      // Rebuild and store camera path so the animation loop picks it up
+      const p = buildCameraPath(width);
+      camStartRef.current.copy(p.camStart);
+      lookStartRef.current.copy(p.lookStart);
+      camEndRef.current.copy(p.camEnd);
+      lookEndRef.current.copy(p.lookEnd);
+    };
+
+    // Apply initial scale
+    applySceneScale(w);
 
     // Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.65));
@@ -106,9 +171,9 @@ export default function ProjectsPage() {
     overhead.shadow.camera.far = 30;
     scene.add(overhead);
 
+    // Post-processing
     const composer = new EffectComposer(renderer);
-    const renderPass = new RenderPass(scene, camera);
-    composer.addPass(renderPass);
+    composer.addPass(new RenderPass(scene, camera));
 
     const outlinePass = new OutlinePass(new THREE.Vector2(w, h), scene, camera);
     outlinePass.edgeStrength = 3.0;
@@ -120,25 +185,30 @@ export default function ProjectsPage() {
     composer.addPass(outlinePass);
 
     const gammaPass = new ShaderPass(GammaCorrectionShader);
-    composer.addPass(gammaPass);
     gammaPass.renderToScreen = true;
+    composer.addPass(gammaPass);
 
+    // Mesh collections for hover / raycasting
     const paperMeshes = [];
-    if (paperStack) {
-      paperStack.traverse((child) => {
-        if (child.isMesh) paperMeshes.push(child);
-      });
-    }
+    const laptopMeshes = [];
+    const folderMeshes = [];
+    paperStack?.traverse((c) => {
+      if (c.isMesh) paperMeshes.push(c);
+    });
+    laptop?.traverse((c) => {
+      if (c.isMesh) laptopMeshes.push(c);
+    });
+    folderGroup?.traverse((c) => {
+      if (c.isMesh) folderMeshes.push(c);
+    });
 
     const paperOrigins = paperMeshes.map((m) => ({
       y: m.position.y,
       ry: m.rotation.y,
     }));
-
     const paperTargets = paperMeshes.map((m, i) => {
-      if (i < paperMeshes.length - 2) {
+      if (i < paperMeshes.length - 2)
         return { y: m.position.y, ry: m.rotation.y };
-      }
       const t2 = i - (paperMeshes.length - 2);
       return {
         y: m.position.y + 0.35 + t2 * 0.2,
@@ -149,25 +219,13 @@ export default function ProjectsPage() {
     let paperHoverProgress = 0;
     let folderHoverProgress = 0;
 
-    const laptopMeshes = [];
-    if (laptop) {
-      laptop.traverse((child) => {
-        if (child.isMesh) laptopMeshes.push(child);
-      });
-    }
-
-    const folderMeshes = [];
-    if (folderGroup) {
-      folderGroup.traverse((child) => {
-        if (child.isMesh) folderMeshes.push(child);
-      });
-    }
-
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let currentHovered = null;
 
-    const labelAnchors = {
+    // Label anchors are in LOCAL scene space (before scale).
+    // In the animation loop we scale them by `s` before projecting.
+    const labelAnchorsLocal = {
       laptop: new THREE.Vector3(0, 0, 0),
       paper: new THREE.Vector3(-3, 0.4, 0.2),
       folder: new THREE.Vector3(3, 0.4, 0.6),
@@ -181,10 +239,21 @@ export default function ProjectsPage() {
     let scrollProgress = 0;
     let targetProgress = 0;
 
+    const syncTargetRef = (v) => {
+      targetProgress = v;
+      targetProgressRef.current = v;
+    };
+
+    resetProgressRef.current = () => {
+      syncTargetRef(0);
+      scrollProgress = 0;
+      glitchTriggered = false;
+    };
+
     const onMouseMove = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
 
       if (scrollProgress < 0.3) {
@@ -196,30 +265,28 @@ export default function ProjectsPage() {
         return;
       }
 
-      const allMeshes = [...paperMeshes, ...laptopMeshes, ...folderMeshes];
-      const intersects = raycaster.intersectObjects(allMeshes);
-
+      const intersects = raycaster.intersectObjects([
+        ...paperMeshes,
+        ...laptopMeshes,
+        ...folderMeshes,
+      ]);
       if (intersects.length > 0) {
-        const hoveredMesh = intersects[0].object;
-        let hoveredGroup = null;
-        if (paperMeshes.includes(hoveredMesh)) hoveredGroup = "paper";
-        else if (laptopMeshes.includes(hoveredMesh)) hoveredGroup = "laptop";
-        else if (folderMeshes.includes(hoveredMesh)) hoveredGroup = "folder";
+        const hm = intersects[0].object;
+        let hg = null;
+        if (paperMeshes.includes(hm)) hg = "paper";
+        else if (laptopMeshes.includes(hm)) hg = "laptop";
+        else if (folderMeshes.includes(hm)) hg = "folder";
 
-        if (currentHovered !== hoveredGroup) {
+        if (currentHovered !== hg) {
           outlinePass.selectedObjects = [];
-          if (hoveredGroup === "paper")
-            outlinePass.selectedObjects = paperMeshes;
-          else if (hoveredGroup === "laptop")
-            outlinePass.selectedObjects = laptopMeshes;
-          else if (hoveredGroup === "folder")
-            outlinePass.selectedObjects = folderMeshes;
-          currentHovered = hoveredGroup;
+          if (hg === "paper") outlinePass.selectedObjects = paperMeshes;
+          if (hg === "laptop") outlinePass.selectedObjects = laptopMeshes;
+          if (hg === "folder") outlinePass.selectedObjects = folderMeshes;
+          currentHovered = hg;
         }
-
         renderer.domElement.style.cursor =
-          hoveredGroup === "laptop" ? "pointer" : "default";
-        labelPosRef.current = hoveredGroup ? { group: hoveredGroup } : null;
+          hg === "laptop" ? "pointer" : "default";
+        labelPosRef.current = hg ? { group: hg } : null;
       } else if (currentHovered !== null) {
         outlinePass.selectedObjects = [];
         currentHovered = null;
@@ -232,50 +299,57 @@ export default function ProjectsPage() {
     const onClick = (event) => {
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
-
-      const laptopIntersects = raycaster.intersectObjects(laptopMeshes);
-      if (laptopIntersects.length > 0 && scrollProgress >= 0.3) {
+      if (
+        raycaster.intersectObjects(laptopMeshes).length > 0 &&
+        scrollProgress >= 0.3
+      )
         syncTargetRef(1);
-      }
-
-      const paperIntersects = raycaster.intersectObjects(paperMeshes);
-      if (paperIntersects.length > 0 && scrollProgress >= 0.3) {
+      if (
+        raycaster.intersectObjects(paperMeshes).length > 0 &&
+        scrollProgress >= 0.3
+      )
         setShowCarousel(true);
-      }
     };
 
     renderer.domElement.addEventListener("mousemove", onMouseMove);
     renderer.domElement.addEventListener("click", onClick);
 
     const onResize = () => {
-      const nw = el.clientWidth,
-        nh = el.clientHeight;
-      camera.aspect = nw / nh;
-      camera.updateProjectionMatrix();
+      const nw = el.clientWidth;
+      const nh = el.clientHeight;
       renderer.setSize(nw, nh);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       composer.setSize(nw, nh);
+      outlinePass.resolution.set(nw, nh);
+      camera.aspect = nw / nh;
+      camera.fov = getFov(nw);
+      camera.updateProjectionMatrix();
+      applySceneScale(nw);
     };
     window.addEventListener("resize", onResize);
-
-    const camStart = new THREE.Vector3(0, 3.2, 8);
-    const camEnd = new THREE.Vector3(0, 1.52, 0.35);
-    const lookStart = new THREE.Vector3(0, 0.2, 0);
-    const lookEnd = new THREE.Vector3(0, 1.52, -1.5);
 
     let glitchTriggered = false;
     let sectionActive = false;
 
-    const syncTargetRef = (v) => {
-      targetProgress = v;
-      targetProgressRef.current = v;
-    };
-
-    resetProgressRef.current = () => {
-      syncTargetRef(0);
-      scrollProgress = 0;
-      glitchTriggered = false;
+    const applyProgress = (p) => {
+      if (textRef.current)
+        textRef.current.style.transform = `translateY(${p * -200}vh)`;
+      if (screenMat) {
+        screenMat.emissive.setHex(0x2255aa);
+        screenMat.emissiveIntensity = Math.max(0, (p - 0.6) / 0.4) * 1.2;
+      }
+      scene.background.lerpColors(
+        new THREE.Color("#25263a"),
+        new THREE.Color("#0d1a35"),
+        Math.max(0, (p - 0.75) / 0.25),
+      );
+      if (p >= 0.99 && !glitchTriggered) {
+        glitchTriggered = true;
+        syncTargetRef(1);
+        triggerGlitch();
+      }
     };
 
     const checkZoomOut = () => {
@@ -295,28 +369,9 @@ export default function ProjectsPage() {
       }
     };
 
-    const applyProgress = (p) => {
-      const txt = textRef.current;
-      if (txt) txt.style.transform = `translateY(${p * -200}vh)`;
-      if (screenMat) {
-        screenMat.emissive.setHex(0x2255aa);
-        screenMat.emissiveIntensity = Math.max(0, (p - 0.6) / 0.4) * 1.2;
-      }
-      scene.background.lerpColors(
-        new THREE.Color("#25263a"),
-        new THREE.Color("#0d1a35"),
-        Math.max(0, (p - 0.75) / 0.25),
-      );
-      if (p >= 0.99 && !glitchTriggered) {
-        glitchTriggered = true;
-        syncTargetRef(1);
-        triggerGlitch();
-      }
-    };
-
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        sectionActive = entry.intersectionRatio >= 0.98;
+      ([e]) => {
+        sectionActive = e.intersectionRatio >= 0.98;
       },
       { threshold: 0.98 },
     );
@@ -324,14 +379,16 @@ export default function ProjectsPage() {
 
     const onWheel = (e) => {
       if (isRestoringRef.current) return;
-      const scrollingDown = e.deltaY > 0;
-      const scrollingUp = e.deltaY < 0;
-      if (scrollingUp && targetProgress <= 0 && scrollProgress < 0.02) return;
+      if (e.deltaY < 0 && targetProgress <= 0 && scrollProgress < 0.02) return;
       if (targetProgress >= 1 && scrollProgress > 0.98) return;
       if (!sectionActive && targetProgress <= 0) return;
       e.preventDefault();
-      const delta = scrollingDown ? 0.35 : -0.35;
-      syncTargetRef(Math.max(0, Math.min(1, targetProgress + delta)));
+      syncTargetRef(
+        Math.max(
+          0,
+          Math.min(1, targetProgress + (e.deltaY > 0 ? 0.35 : -0.35)),
+        ),
+      );
     };
     el.addEventListener("wheel", onWheel, { passive: false });
 
@@ -362,18 +419,30 @@ export default function ProjectsPage() {
     const animate = () => {
       raf = requestAnimationFrame(animate);
       t += 0.008;
+
       checkZoomOut();
       scrollProgress += (targetProgress - scrollProgress) * 0.06;
       applyProgress(scrollProgress);
-      camera.position.lerpVectors(camStart, camEnd, scrollProgress);
-      camera.lookAt(
-        new THREE.Vector3().lerpVectors(lookStart, lookEnd, scrollProgress),
+
+      // Camera uses live refs — always correct after a resize
+      camera.position.lerpVectors(
+        camStartRef.current,
+        camEndRef.current,
+        scrollProgress,
       );
+      camera.lookAt(
+        new THREE.Vector3().lerpVectors(
+          lookStartRef.current,
+          lookEndRef.current,
+          scrollProgress,
+        ),
+      );
+
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
 
-      const paperHovered = currentHovered === "paper";
+      // Paper hover
       paperHoverProgress +=
-        ((paperHovered ? 1 : 0) - paperHoverProgress) * 0.08;
+        ((currentHovered === "paper" ? 1 : 0) - paperHoverProgress) * 0.08;
       paperMeshes.forEach((m, i) => {
         m.position.y =
           paperOrigins[i].y +
@@ -383,22 +452,23 @@ export default function ProjectsPage() {
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
 
-      const folderHovered = currentHovered === "folder";
+      // Folder hover
       folderHoverProgress +=
-        ((folderHovered ? 1 : 0) - folderHoverProgress) * 0.07;
-      if (folderTopPivot) {
+        ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
+      if (folderTopPivot)
         folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
-      }
 
       composer.render();
 
+      // Hover label — scale local anchor into world space before projecting
       if (labelPosRef.current) {
         const { group } = labelPosRef.current;
-        const anchor = labelAnchors[group].clone();
-        anchor.project(camera);
+        const s = getSceneScale(el.clientWidth);
+        const worldAnchor = labelAnchorsLocal[group].clone().multiplyScalar(s);
+        worldAnchor.project(camera);
         const rect = renderer.domElement.getBoundingClientRect();
-        const x = (anchor.x * 0.5 + 0.5) * rect.width + rect.left;
-        const y = (-anchor.y * 0.5 + 0.5) * rect.height + rect.top;
+        const x = (worldAnchor.x * 0.5 + 0.5) * rect.width + rect.left;
+        const y = (-worldAnchor.y * 0.5 + 0.5) * rect.height + rect.top;
         setHoverLabel({ text: labelTexts[group], x, y });
       }
     };
@@ -431,7 +501,6 @@ export default function ProjectsPage() {
         onBack={handleBack}
         onShutdown={handleShutdown}
       />
-
       <CertificateCarousel
         isOpen={showCarousel}
         onClose={() => setShowCarousel(false)}
@@ -447,14 +516,14 @@ export default function ProjectsPage() {
             pointerEvents: "none",
             zIndex: 50,
             color: "#db9834",
-            fontSize: "13px",
+            fontSize: "clamp(10px, 1.1vw, 13px)",
             fontWeight: 700,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontFamily: "system-ui, sans-serif",
             textShadow: "0 0 12px rgba(219,152,52,0.6)",
             background: "rgba(13,15,24,0.7)",
-            padding: "4px 10px",
+            padding: "clamp(2px,0.4vw,4px) clamp(6px,0.8vw,10px)",
             borderRadius: "4px",
             border: "1px solid rgba(219,152,52,0.3)",
             whiteSpace: "nowrap",
@@ -474,7 +543,13 @@ export default function ProjectsPage() {
         }}>
         <div
           ref={mountRef}
-          style={{ position: "absolute", inset: 0, zIndex: 1 }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 1,
+            width: "100%",
+            height: "100%",
+          }}
         />
         <div
           style={{
@@ -489,15 +564,19 @@ export default function ProjectsPage() {
           <span
             ref={textRef}
             style={{
-              fontSize: "clamp(80px, 16vw, 220px)",
+              fontSize: "clamp(48px, 14vw, 220px)",
               fontWeight: 900,
               letterSpacing: "-0.02em",
               color: "transparent",
-              WebkitTextStroke: "4px rgba(219,152,52,0.7)",
+              WebkitTextStroke:
+                "clamp(1.5px, 0.28vw, 4px) rgba(219,152,52,0.7)",
               userSelect: "none",
               lineHeight: 1,
               willChange: "transform",
               transition: "transform 0.05s linear",
+              whiteSpace: "nowrap",
+              maxWidth: "100vw",
+              overflow: "hidden",
             }}>
             PROJECTS
           </span>

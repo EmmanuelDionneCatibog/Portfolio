@@ -141,9 +141,13 @@ export function createDeskScene(scene) {
     side: THREE.DoubleSide,
   });
 
+  // Root group — scale this to make the whole scene responsive
+  const sceneRoot = new THREE.Group();
+  scene.add(sceneRoot);
+
   // Desk
   const deskGroup = new THREE.Group();
-  scene.add(deskGroup);
+  sceneRoot.add(deskGroup);
   deskGroup.add(box(9, 0.18, 4, deskMat, 0, DESK_Y - 0.09, 0));
   [
     [-4.3, -1.5],
@@ -157,7 +161,7 @@ export function createDeskScene(scene) {
   // Laptop
   const laptop = new THREE.Group();
   laptop.position.set(0, DESK_Y + 0.05, 0);
-  scene.add(laptop);
+  sceneRoot.add(laptop);
   const base = new THREE.Group();
   laptop.add(base);
   base.add(box(3.4, 0.1, 2.2, bodyMat));
@@ -255,7 +259,7 @@ export function createDeskScene(scene) {
   // Lamp
   const lamp = new THREE.Group();
   lamp.position.set(3.6, DESK_Y, -1.2);
-  scene.add(lamp);
+  sceneRoot.add(lamp);
   lamp.add(cyl(0.3, 0.45, 0.07, 24, lampBaseMat, 0, 0.035, 0));
   lamp.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 0.11, 0));
 
@@ -315,7 +319,7 @@ export function createDeskScene(scene) {
   // Plant
   const plant = new THREE.Group();
   plant.position.set(-2.7, DESK_Y, -1);
-  scene.add(plant);
+  sceneRoot.add(plant);
 
   const potBody = new THREE.Mesh(
     new THREE.CylinderGeometry(0.28, 0.2, 0.45, 20),
@@ -646,12 +650,12 @@ export function createDeskScene(scene) {
     );
     paperStack.add(paperMesh);
   });
-  scene.add(paperStack);
+  sceneRoot.add(paperStack);
 
   // Pencil holder
   const holderGroup = new THREE.Group();
   holderGroup.position.set(-2.2, DESK_Y + 0.04, -0.7);
-  scene.add(holderGroup);
+  sceneRoot.add(holderGroup);
 
   const holderMat = new THREE.MeshStandardMaterial({
     color: 0x5c3317,
@@ -687,7 +691,7 @@ export function createDeskScene(scene) {
   // Folder
   const folderGroup = new THREE.Group();
   folderGroup.position.set(3.0, DESK_Y, 0.3);
-  scene.add(folderGroup);
+  sceneRoot.add(folderGroup);
 
   const folderMat = new THREE.MeshStandardMaterial({
     color: 0xc8924a,
@@ -701,14 +705,13 @@ export function createDeskScene(scene) {
     side: THREE.DoubleSide,
   });
 
-  const fw = 1.2;
-  const fh = 0.008;
-  const fd = 1.4;
-
+  const fw = 1.2,
+    fh = 0.008,
+    fd = 1.4;
   folderGroup.add(box(fw, fh, fd, folderMat, 0, fh / 2, 0));
 
-  const tabW = 0.1;
-  const tabD = fd * 0.3;
+  const tabW = 0.1,
+    tabD = fd * 0.3;
   folderGroup.add(
     box(
       tabW,
@@ -734,8 +737,7 @@ export function createDeskScene(scene) {
   coverShape.lineTo(0, -fd / 2);
   coverShape.lineTo(0, fd / 2);
 
-  const extrudeSettings = { depth: fh, bevelEnabled: false }; // Uses the thinner fh
-
+  const extrudeSettings = { depth: fh, bevelEnabled: false };
   const topCoverGeo = new THREE.ExtrudeGeometry(coverShape, extrudeSettings);
   topCoverGeo.rotateX(-Math.PI / 2);
   topCoverGeo.translate(0, fh, 0);
@@ -764,30 +766,23 @@ export function createDeskScene(scene) {
   const topInner = new THREE.Mesh(innerGeo, folderInnerMat);
   folderTopPivot.add(topInner);
 
-  // Paper inside
   const paperInsideMat = new THREE.MeshStandardMaterial({
     color: 0xf5f0e8,
     roughness: 0.9,
   });
-  const paperWidth = fw - 0.3;
-  const paperDepth = fd - 0.3;
-  const paperThickness = 0.002;
-
   const paperInside = box(
-    paperWidth,
-    paperThickness,
-    paperDepth,
+    fw - 0.3,
+    0.002,
+    fd - 0.3,
     paperInsideMat,
     0,
-    fh + paperThickness / 2,
-    0,
-    0,
-    0,
+    fh + 0.001,
     0,
   );
   folderGroup.add(paperInside);
 
   return {
+    sceneRoot,
     deskGroup,
     laptop,
     lampLight,

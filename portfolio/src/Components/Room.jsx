@@ -1,6 +1,5 @@
 import * as THREE from "three";
 
-// Helper functions
 const box = (
   gw,
   gh,
@@ -50,6 +49,10 @@ export function createRoomScene(scene) {
   const wallD = 20;
   const backWallZ = -2.1;
 
+  // Root group so the whole room can be scaled uniformly
+  const roomRoot = new THREE.Group();
+  scene.add(roomRoot);
+
   // ─── Floor & Walls ───────────────────────────────────────────────────────
   const floor = new THREE.Mesh(
     new THREE.PlaneGeometry(30, 30),
@@ -58,7 +61,7 @@ export function createRoomScene(scene) {
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = DESK_Y - 0.09 - 2.8;
   floor.receiveShadow = true;
-  scene.add(floor);
+  roomRoot.add(floor);
 
   const wallMat = new THREE.MeshStandardMaterial({
     color: 0x1c1c2c,
@@ -72,7 +75,7 @@ export function createRoomScene(scene) {
   );
   backWall.position.set(0, floorY + wallH / 2, backWallZ);
   backWall.receiveShadow = true;
-  scene.add(backWall);
+  roomRoot.add(backWall);
 
   const leftWall = new THREE.Mesh(
     new THREE.PlaneGeometry(wallD, wallH),
@@ -81,7 +84,7 @@ export function createRoomScene(scene) {
   leftWall.rotation.y = Math.PI / 2;
   leftWall.position.set(-wallW / 2, floorY + wallH / 2, 0);
   leftWall.receiveShadow = true;
-  scene.add(leftWall);
+  roomRoot.add(leftWall);
 
   const rightWall = new THREE.Mesh(
     new THREE.PlaneGeometry(wallD, wallH),
@@ -90,7 +93,7 @@ export function createRoomScene(scene) {
   rightWall.rotation.y = -Math.PI / 2;
   rightWall.position.set(wallW / 2, floorY + wallH / 2, 0);
   rightWall.receiveShadow = true;
-  scene.add(rightWall);
+  roomRoot.add(rightWall);
 
   // ─── Grid lines ──────────────────────────────────────────────────────────
   const fadedLineMat = new THREE.MeshBasicMaterial({
@@ -101,7 +104,7 @@ export function createRoomScene(scene) {
   const wallLine = (w, h, d, px, py, pz) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), fadedLineMat);
     m.position.set(px, py, pz);
-    scene.add(m);
+    roomRoot.add(m);
   };
   const bwZ = backWallZ + 0.02;
   for (let i = 0; i < 5; i++)
@@ -130,7 +133,7 @@ export function createRoomScene(scene) {
       floorGridMat,
     );
     m.position.set(0, floorY + 0.005, i * 2.8);
-    scene.add(m);
+    roomRoot.add(m);
   }
   for (let i = -4; i <= 4; i++) {
     const m = new THREE.Mesh(
@@ -138,7 +141,7 @@ export function createRoomScene(scene) {
       floorGridMat,
     );
     m.position.set(i * 2.5, floorY + 0.005, 0);
-    scene.add(m);
+    roomRoot.add(m);
   }
 
   // ── Bookshelf on left wall ───────────────────────────────────────────────
@@ -155,7 +158,7 @@ export function createRoomScene(scene) {
   const bookshelf = new THREE.Group();
   bookshelf.position.set(-10.8, floorY, -0.5);
   bookshelf.rotation.y = Math.PI / 2;
-  scene.add(bookshelf);
+  roomRoot.add(bookshelf);
 
   bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, -0.96, 2.0, 0));
   bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, 0.96, 2.0, 0));
@@ -239,7 +242,7 @@ export function createRoomScene(scene) {
   });
   const frame1 = new THREE.Group();
   frame1.position.set(0, floorY + 5.5, backWallZ + 0.04);
-  scene.add(frame1);
+  roomRoot.add(frame1);
   frame1.add(box(2.0, 1.3, 0.06, frameMat1, 0, 0, 0));
   frame1.add(box(1.78, 1.08, 0.04, artMat1, 0, 0, 0.02));
 
@@ -282,7 +285,7 @@ export function createRoomScene(scene) {
   });
   const frame2 = new THREE.Group();
   frame2.position.set(-3.8, floorY + 5.4, backWallZ + 0.04);
-  scene.add(frame2);
+  roomRoot.add(frame2);
   frame2.add(box(1.1, 0.9, 0.06, frameMat2, 0, 0, 0));
   frame2.add(box(0.92, 0.72, 0.04, artMat2, 0, 0, 0.02));
 
@@ -307,7 +310,7 @@ export function createRoomScene(scene) {
   });
   const frame3 = new THREE.Group();
   frame3.position.set(3.5, floorY + 5.6, backWallZ + 0.04);
-  scene.add(frame3);
+  roomRoot.add(frame3);
   frame3.add(box(0.85, 1.15, 0.06, frameMat3, 0, 0, 0));
   frame3.add(box(0.68, 0.98, 0.04, artMat3, 0, 0, 0.02));
 
@@ -331,5 +334,5 @@ export function createRoomScene(scene) {
     frame3.add(star);
   });
 
-  return { floorY, backWallZ, wallH, wallW };
+  return { roomRoot, floorY, backWallZ, wallH, wallW };
 }
