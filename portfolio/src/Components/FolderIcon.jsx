@@ -15,9 +15,9 @@ export default function FolderIcon({ name, onClick, style }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "6px",
+        gap: "clamp(4px, 0.7vw, 6px)",
         cursor: "pointer",
-        padding: "8px 10px",
+        padding: "clamp(6px, 1vw, 8px) clamp(8px, 1.1vw, 10px)",
         borderRadius: "6px",
         background: hovered ? "rgba(219,152,52,0.15)" : "transparent",
         border: hovered
@@ -25,10 +25,14 @@ export default function FolderIcon({ name, onClick, style }) {
           : "1px solid transparent",
         transition: "background 0.15s, border 0.15s",
         userSelect: "none",
-        width: "88px",
+        width: "clamp(68px, 14vw, 88px)",
         ...style,
       }}>
-      <svg width="52" height="44" viewBox="0 0 52 44" fill="none">
+      <svg
+        width="clamp(40px, 8vw, 52px)"
+        height="clamp(34px, 6.8vw, 44px)"
+        viewBox="0 0 52 44"
+        fill="none">
         <path
           d="M2 8C2 5.79 3.79 4 6 4H20L24 10H46C48.21 10 50 11.79 50 14V38C50 40.21 48.21 42 46 42H6C3.79 42 2 40.21 2 38V8Z"
           fill="#db9834"
@@ -48,12 +52,14 @@ export default function FolderIcon({ name, onClick, style }) {
       <span
         style={{
           color: "#fff",
-          fontSize: "12px",
+          fontSize: "clamp(10px, 2.2vw, 12px)",
           textAlign: "center",
           textShadow: "0 1px 3px rgba(0,0,0,0.9)",
           lineHeight: 1.3,
           fontFamily: "system-ui, sans-serif",
           fontWeight: 500,
+          maxWidth: "100%",
+          wordBreak: "break-word",
         }}>
         {name}
       </span>

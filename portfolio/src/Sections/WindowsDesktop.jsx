@@ -168,8 +168,33 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           left: clamp(10px, 1.5vw, 20px);
           display: flex;
           flex-direction: column;
+          flex-wrap: wrap;
           gap: clamp(4px, 0.6vh, 8px);
           z-index: 5;
+          max-height: calc(100vh - clamp(96px, 12vh, 124px));
+          max-width: min(100vw - 20px, 520px);
+        }
+        @media (max-width: 720px) {
+          .wd-icons-col {
+            top: clamp(16px, 3vh, 28px);
+            left: clamp(8px, 2vw, 12px);
+            right: clamp(8px, 2vw, 12px);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+            align-items: start;
+            justify-items: center;
+            max-height: none;
+            max-width: none;
+            gap: 8px;
+          }
+        }
+        @media (max-width: 520px) {
+          .wd-start-menu {
+            width: calc(100vw - 16px);
+            left: 8px;
+            right: 8px;
+            bottom: 48px;
+          }
         }
         .wd-start-menu {
           position: absolute;

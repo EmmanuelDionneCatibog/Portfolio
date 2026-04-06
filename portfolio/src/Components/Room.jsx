@@ -156,8 +156,8 @@ export function createRoomScene(scene) {
   });
 
   const bookshelf = new THREE.Group();
-  bookshelf.position.set(-10.8, floorY, -0.5);
-  bookshelf.rotation.y = Math.PI / 2;
+  bookshelf.position.set(-5.6, floorY, -0.5);
+  bookshelf.rotation.y = 0;
   roomRoot.add(bookshelf);
 
   bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, -0.96, 2.0, 0));
@@ -174,16 +174,26 @@ export function createRoomScene(scene) {
     0x27ae60, 0xe67e22, 0x8e44ad, 0xd4380d, 0x096dd9, 0x389e0d, 0xd48806,
     0x531dab,
   ];
+  const getRandomBookColor = (lastColor) => {
+    let nextColor = bookColors[Math.floor(Math.random() * bookColors.length)];
+    while (bookColors.length > 1 && nextColor === lastColor) {
+      nextColor = bookColors[Math.floor(Math.random() * bookColors.length)];
+    }
+    return nextColor;
+  };
   const shelfLevels = [0.18, 1.18, 2.18, 3.08];
   shelfLevels.forEach((sy, si) => {
     let xCursor = -0.85;
     const numBooks = 5 + (si % 3);
+    let lastColor = null;
     for (let b = 0; b < numBooks && xCursor < 0.85; b++) {
       const bw = 0.1 + Math.random() * 0.08;
       const bh = 0.55 + Math.random() * 0.25;
       const tilt = (Math.random() - 0.5) * 0.08;
+      const bookColor = getRandomBookColor(lastColor);
+      lastColor = bookColor;
       const bMat = new THREE.MeshStandardMaterial({
-        color: bookColors[(si * 5 + b) % bookColors.length],
+        color: bookColor,
         roughness: 0.8,
       });
       const book = box(
@@ -227,6 +237,172 @@ export function createRoomScene(scene) {
   });
   bookshelf.add(cyl(0.08, 0.06, 0.28, 12, vaseMatS, 0.7, 3.22, 0));
   bookshelf.add(cyl(0.13, 0.08, 0.04, 12, vaseMatS, 0.7, 3.38, 0));
+
+  const decorBookColors = [0x7a2323, 0x1d3f73, 0x9a6b18, 0x385b32];
+  decorBookColors.forEach((color, i) => {
+    const accentMat = new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.78,
+    });
+    bookshelf.add(
+      box(
+        0.42,
+        0.08,
+        0.56,
+        accentMat,
+        -0.55 + i * 0.24,
+        4.12 + i * 0.02,
+        -0.05 + i * 0.02,
+        0.02 * i,
+        0.12 - i * 0.04,
+        0,
+      ),
+    );
+  });
+
+  const planterMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5a2b,
+    roughness: 0.82,
+  });
+  const planterRimMat = new THREE.MeshStandardMaterial({
+    color: 0x71431c,
+    roughness: 0.78,
+  });
+  const plantLeafMat = new THREE.MeshStandardMaterial({
+    color: 0x3f7f45,
+    roughness: 0.84,
+    side: THREE.DoubleSide,
+  });
+  const cabinetStemMat = new THREE.MeshStandardMaterial({
+    color: 0x2e5a2e,
+    roughness: 0.8,
+  });
+  const cabinetPlant = new THREE.Group();
+  cabinetPlant.position.set(-0.62, 4.1, 0.48);
+  bookshelf.add(cabinetPlant);
+  cabinetPlant.add(cyl(0.14, 0.11, 0.22, 18, planterMat, 0, 0.11, 0));
+  cabinetPlant.add(cyl(0.16, 0.14, 0.035, 18, planterRimMat, 0, 0.235, 0));
+  cabinetPlant.add(cyl(0.035, 0.04, 0.42, 10, cabinetStemMat, 0, 0.44, 0));
+  [
+    [-0.12, 0.52, 0.02, -0.28],
+    [0.13, 0.58, -0.02, 0.32],
+    [-0.1, 0.68, -0.04, -0.18],
+    [0.12, 0.74, 0.03, 0.2],
+    [0, 0.82, -0.05, 0],
+  ].forEach(([px, py, pz, ry]) => {
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 8), plantLeafMat);
+    leaf.scale.set(0.45, 0.14, 0.9);
+    leaf.position.set(px, py, pz);
+    leaf.rotation.set(-0.25, ry, 0);
+    leaf.castShadow = true;
+    cabinetPlant.add(leaf);
+  });
+
+  const sculptureMat = new THREE.MeshStandardMaterial({
+    color: 0xb9bcc4,
+    roughness: 0.34,
+    metalness: 0.75,
+  });
+  const sculptureBaseMat = new THREE.MeshStandardMaterial({
+    color: 0x272733,
+    roughness: 0.68,
+  });
+  const sculpture = new THREE.Group();
+  sculpture.position.set(0.5, 4.1, 0.38);
+  bookshelf.add(sculpture);
+  sculpture.add(box(0.42, 0.06, 0.28, sculptureBaseMat, 0, 0.03, 0));
+  sculpture.add(cyl(0.03, 0.03, 0.34, 12, sculptureMat, 0, 0.22, 0));
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 16), sculptureMat);
+  orb.position.set(0, 0.45, 0);
+  orb.castShadow = true;
+  sculpture.add(orb);
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(0.18, 0.024, 10, 24),
+    sculptureMat,
+  );
+  ring.position.set(0, 0.45, 0);
+  ring.rotation.set(Math.PI / 3.2, 0.2, 0.4);
+  ring.castShadow = true;
+  sculpture.add(ring);
+
+  const floorPlantPotMat = new THREE.MeshStandardMaterial({
+    color: 0x7a4725,
+    roughness: 0.82,
+  });
+  const floorPlantRimMat = new THREE.MeshStandardMaterial({
+    color: 0x5f3318,
+    roughness: 0.78,
+  });
+  const floorPlantStemMat = new THREE.MeshStandardMaterial({
+    color: 0x315f2a,
+    roughness: 0.82,
+  });
+  const floorPlantLeafMat = new THREE.MeshStandardMaterial({
+    color: 0x4c8d3f,
+    roughness: 0.86,
+    side: THREE.DoubleSide,
+  });
+  const floorPlantLeafDarkMat = new THREE.MeshStandardMaterial({
+    color: 0x32652b,
+    roughness: 0.88,
+    side: THREE.DoubleSide,
+  });
+  const floorPlant = new THREE.Group();
+  floorPlant.position.set(6.2, floorY, 0.25);
+  roomRoot.add(floorPlant);
+  floorPlant.add(cyl(0.46, 0.34, 0.78, 22, floorPlantPotMat, 0, 0.39, 0));
+  floorPlant.add(cyl(0.5, 0.46, 0.08, 22, floorPlantRimMat, 0, 0.78, 0));
+  floorPlant.add(cyl(0.4, 0.4, 0.08, 20, shelfPanelMat, 0, 0.79, 0));
+  floorPlant.add(cyl(0.065, 0.09, 2.45, 12, floorPlantStemMat, 0, 1.98, 0));
+  [
+    { x: -0.42, y: 1.45, z: 0.1, ry: -0.9, rz: -0.28, s: 1.45, mat: floorPlantLeafMat },
+    { x: 0.46, y: 1.58, z: -0.06, ry: 0.85, rz: 0.26, s: 1.52, mat: floorPlantLeafDarkMat },
+    { x: -0.28, y: 1.95, z: -0.16, ry: -0.5, rz: -0.18, s: 1.35, mat: floorPlantLeafDarkMat },
+    { x: 0.26, y: 2.15, z: 0.18, ry: 0.42, rz: 0.18, s: 1.4, mat: floorPlantLeafMat },
+    { x: -0.18, y: 2.42, z: 0.12, ry: -0.18, rz: -0.06, s: 1.3, mat: floorPlantLeafMat },
+    { x: 0.16, y: 2.62, z: -0.12, ry: 0.2, rz: 0.08, s: 1.25, mat: floorPlantLeafDarkMat },
+    { x: -0.12, y: 2.88, z: -0.04, ry: Math.PI + 0.18, rz: -0.02, s: 1.16, mat: floorPlantLeafMat },
+    { x: 0.1, y: 3.08, z: 0.08, ry: Math.PI - 0.16, rz: 0.04, s: 1.12, mat: floorPlantLeafDarkMat },
+    { x: -0.04, y: 3.26, z: -0.06, ry: 0, rz: -0.03, s: 1.04, mat: floorPlantLeafMat },
+    { x: 0.02, y: 3.46, z: 0.02, ry: Math.PI, rz: 0.02, s: 0.96, mat: floorPlantLeafDarkMat },
+  ].forEach(({ x, y, z, ry, rz, s, mat }) => {
+    const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 10), mat);
+    leaf.scale.set(0.5 * s, 0.14 * s, 1.95 * s);
+    leaf.position.set(x, y, z);
+    leaf.rotation.set(-0.22, ry, rz);
+    leaf.castShadow = true;
+    floorPlant.add(leaf);
+  });
+
+  const crateMat = new THREE.MeshStandardMaterial({
+    color: 0x5a341b,
+    roughness: 0.82,
+  });
+  const crate = new THREE.Group();
+  crate.position.set(7.8, floorY, 2.85);
+  crate.rotation.y = -0.18;
+  roomRoot.add(crate);
+  crate.add(box(1.1, 0.1, 0.9, crateMat, 0, 0.05, 0));
+  crate.add(box(1.1, 0.8, 0.08, crateMat, 0, 0.45, -0.41));
+  crate.add(box(1.1, 0.8, 0.08, crateMat, 0, 0.45, 0.41));
+  crate.add(box(0.08, 0.8, 0.9, crateMat, -0.51, 0.45, 0));
+  crate.add(box(0.08, 0.8, 0.9, crateMat, 0.51, 0.45, 0));
+  decorBookColors.slice(0, 3).forEach((color, i) => {
+    crate.add(
+      box(
+        0.18,
+        0.56 + i * 0.05,
+        0.58,
+        new THREE.MeshStandardMaterial({ color, roughness: 0.8 }),
+        -0.28 + i * 0.23,
+        0.38 + i * 0.03,
+        0,
+        0,
+        0,
+        (i - 1) * 0.05,
+      ),
+    );
+  });
 
   // ── Framed art on back wall ──────────────────────────────────────────────
   const frameMat1 = new THREE.MeshStandardMaterial({
