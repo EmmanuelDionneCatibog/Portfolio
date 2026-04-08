@@ -29,12 +29,7 @@ function getFov(width, height) {
 }
 
 // ── Camera path helpers ───────────────────────────────────────────────────
-// The desk/room root is scaled by `s` around world-origin.
-// Every world-space point on the scene also moves by `s`, so the camera
-// end-point (fly-into-laptop) must be scaled the same way.
-//
-// Full-size (s=1) values that work at 1440px:
-const CAM_START_FULL = new THREE.Vector3(0, 3.2, 8);
+const CAM_START_FULL = new THREE.Vector3(0, 3.05, 7.35);
 const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
 const CAM_END_FULL = new THREE.Vector3(0, 1.52, 0.35);
 const LOOK_END_FULL = new THREE.Vector3(0, 1.52, -1.5);
@@ -54,8 +49,6 @@ function buildCameraPath(width, height) {
     lookStart: LOOK_START_FULL.clone()
       .multiplyScalar(s)
       .add(new THREE.Vector3(0, lookLift, 0)),
-    // camEnd z gets a small fixed offset so the camera sits just in front of
-    // the screen surface rather than exactly on the origin at tiny scales.
     camEnd: new THREE.Vector3(
       0,
       CAM_END_FULL.y * s + cameraLift * 0.2,

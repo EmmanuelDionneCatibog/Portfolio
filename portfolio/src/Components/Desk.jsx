@@ -316,319 +316,117 @@ export function createDeskScene(scene) {
   scene.add(lampLight);
   scene.add(lampLight.target);
 
-  // Plant
-  const plant = new THREE.Group();
-  plant.position.set(-2.7, DESK_Y, -1);
-  sceneRoot.add(plant);
+  // Desk decor
+  const deskDecorMat = new THREE.MeshStandardMaterial({
+    color: 0x355c7d,
+    roughness: 0.68,
+    metalness: 0.12,
+  });
+  const pencilMatYellow = new THREE.MeshStandardMaterial({
+    color: 0xe1b53a,
+    roughness: 0.7,
+  });
+  const pencilMatPink = new THREE.MeshStandardMaterial({
+    color: 0xe38ca6,
+    roughness: 0.7,
+  });
+  const pencilTipMat = new THREE.MeshStandardMaterial({
+    color: 0xd9c0a1,
+    roughness: 0.9,
+  });
+  const graphiteMat = new THREE.MeshStandardMaterial({
+    color: 0x2c2c30,
+    roughness: 0.95,
+  });
+  const deskCup = new THREE.Group();
+  deskCup.position.set(-2.7, DESK_Y, -1);
+  sceneRoot.add(deskCup);
 
-  const potBody = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.28, 0.2, 0.45, 20),
-    potMat,
+  const cupBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.24, 0.21, 0.42, 24),
+    deskDecorMat,
   );
-  potBody.position.y = 0.225;
-  potBody.castShadow = true;
-  potBody.receiveShadow = true;
-  plant.add(potBody);
+  cupBody.position.y = 0.21;
+  cupBody.castShadow = true;
+  cupBody.receiveShadow = true;
+  deskCup.add(cupBody);
 
-  const potRim = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.31, 0.28, 0.06, 20),
+  const cupRim = new THREE.Mesh(
+    new THREE.TorusGeometry(0.225, 0.03, 10, 28),
     potRimMat,
   );
-  potRim.position.y = 0.45 + 0.03;
-  potRim.castShadow = true;
-  plant.add(potRim);
+  cupRim.position.y = 0.42;
+  cupRim.rotation.x = Math.PI / 2;
+  cupRim.castShadow = true;
+  deskCup.add(cupRim);
 
-  const soil = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.27, 0.27, 0.04, 20),
-    soilMat,
-  );
-  soil.position.y = 0.47;
-  plant.add(soil);
+  const pencilEraser = (x, z, h, rx, rz, bodyMat) => {
+    const pencil = new THREE.Group();
+    pencil.position.set(x, 0.4, z);
+    pencil.rotation.set(rx, 0, rz);
 
-  plant.add(cyl(0.04, 0.045, 0.75, 12, stemMat, 0, 0.85, 0));
+    const body = cyl(0.03, 0.03, h, 6, bodyMat, 0, h / 2, 0);
+    pencil.add(body);
 
-  const makeBranch = (
-    px,
-    py,
-    pz,
-    angle,
-    length,
-    thickness,
-    rotationAxis = "x",
-  ) => {
-    const branchGroup = new THREE.Group();
-    branchGroup.position.set(px, py, pz);
-    const branchCyl = cyl(
-      thickness,
-      thickness,
-      length,
-      8,
-      stemMat,
-      0,
-      length / 2,
-      0,
+    const ferrule = cyl(0.032, 0.032, 0.05, 10, hingeMat, 0, h + 0.025, 0);
+    pencil.add(ferrule);
+
+    const eraser = cyl(0.028, 0.028, 0.06, 10, pencilMatPink, 0, h + 0.08, 0);
+    pencil.add(eraser);
+
+    const woodTip = new THREE.Mesh(
+      new THREE.ConeGeometry(0.03, 0.08, 8),
+      pencilTipMat,
     );
-    if (rotationAxis === "x") branchGroup.rotation.x = angle;
-    else if (rotationAxis === "z") branchGroup.rotation.z = angle;
-    else if (rotationAxis === "y") branchGroup.rotation.y = angle;
-    branchGroup.add(branchCyl);
-    plant.add(branchGroup);
-    return branchGroup;
+    woodTip.position.y = -0.04;
+    woodTip.rotation.x = Math.PI;
+    pencil.add(woodTip);
+
+    const lead = new THREE.Mesh(
+      new THREE.ConeGeometry(0.012, 0.03, 8),
+      graphiteMat,
+    );
+    lead.position.y = -0.095;
+    lead.rotation.x = Math.PI;
+    pencil.add(lead);
+
+    deskCup.add(pencil);
   };
 
-  const branchPoints = [
-    { y: 0.65, angle: -0.4, length: 0.28, thickness: 0.022, axis: "x" },
-    { y: 0.65, angle: 0.4, length: 0.28, thickness: 0.022, axis: "x" },
-    { y: 0.85, angle: -0.5, length: 0.35, thickness: 0.025, axis: "x" },
-    { y: 0.85, angle: 0.5, length: 0.35, thickness: 0.025, axis: "x" },
-    { y: 1.05, angle: -0.45, length: 0.4, thickness: 0.028, axis: "x" },
-    { y: 1.05, angle: 0.45, length: 0.4, thickness: 0.028, axis: "x" },
-    { y: 1.2, angle: 0, length: 0.32, thickness: 0.03, axis: "x" },
-    { y: 1.2, angle: Math.PI, length: 0.32, thickness: 0.03, axis: "x" },
-  ];
-  branchPoints.forEach((point) =>
-    makeBranch(
-      0,
-      point.y,
-      0,
-      point.angle,
-      point.length,
-      point.thickness,
-      point.axis,
-    ),
-  );
-
-  const makeLeafDetailed = (
-    mat,
-    px,
-    py,
-    pz,
-    rx,
-    ry,
-    rz,
-    sx = 1,
-    sy = 1,
-    sz = 1,
-    isBranchTip = false,
-  ) => {
-    const geo = new THREE.SphereGeometry(0.22, 12, 8);
-    const m = new THREE.Mesh(geo, mat);
-    m.scale.set(sx, sy, sz);
-    m.position.set(px, py, pz);
-    m.rotation.set(rx, ry, rz);
-    m.castShadow = true;
-    plant.add(m);
-    if (isBranchTip) {
-      const conn = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.012, 0.015, 0.08, 6),
-        stemMat,
-      );
-      conn.position.set(px * 0.7, py - 0.05, pz * 0.7);
-      conn.rotation.set(rx * 0.5, ry, rz * 0.5);
-      conn.castShadow = true;
-      plant.add(conn);
-    }
-  };
-
-  const stemTop = 1.28;
-  makeLeafDetailed(
-    leafMat,
-    0,
-    stemTop + 0.15,
-    0.12,
-    -0.3,
-    0,
-    0,
-    0.65,
-    0.22,
-    1.1,
-    true,
-  );
-  makeLeafDetailed(
-    leafDarkMat,
-    0.12,
-    stemTop + 0.12,
-    -0.08,
-    -0.25,
-    0.4,
-    0.15,
-    0.62,
-    0.21,
-    1.05,
-    true,
-  );
-  makeLeafDetailed(
-    leafMat,
-    -0.12,
-    stemTop + 0.12,
-    -0.08,
-    -0.25,
-    -0.4,
-    -0.15,
-    0.62,
-    0.21,
-    1.05,
-    true,
-  );
-  makeLeafDetailed(
-    leafDarkMat,
-    0.08,
-    stemTop + 0.1,
-    -0.15,
-    -0.2,
-    0.7,
-    0.1,
-    0.58,
-    0.2,
-    1.0,
-    true,
-  );
-  makeLeafDetailed(
-    leafMat,
-    -0.08,
-    stemTop + 0.1,
-    -0.15,
-    -0.2,
-    -0.7,
-    -0.1,
-    0.58,
-    0.2,
-    1.0,
-    true,
-  );
-  makeLeafDetailed(
-    leafDarkMat,
-    0,
-    stemTop + 0.08,
-    -0.2,
-    -0.15,
-    Math.PI,
-    0,
-    0.6,
-    0.19,
-    1.02,
-    true,
-  );
-
-  const extraLeaves = [
-    {
-      mat: leafMat,
-      px: -0.18,
-      py: 1.12,
-      pz: 0.22,
-      rx: -0.2,
-      ry: -0.8,
-      rz: -0.1,
-      sx: 0.45,
-      sy: 0.14,
-      sz: 0.78,
-    },
-    {
-      mat: leafDarkMat,
-      px: 0.18,
-      py: 1.12,
-      pz: 0.22,
-      rx: -0.2,
-      ry: 0.8,
-      rz: 0.1,
-      sx: 0.45,
-      sy: 0.14,
-      sz: 0.78,
-    },
-    {
-      mat: leafMat,
-      px: -0.15,
-      py: 0.95,
-      pz: 0.28,
-      rx: -0.15,
-      ry: -0.6,
-      rz: -0.2,
-      sx: 0.42,
-      sy: 0.13,
-      sz: 0.72,
-    },
-    {
-      mat: leafDarkMat,
-      px: 0.15,
-      py: 0.95,
-      pz: 0.28,
-      rx: -0.15,
-      ry: 0.6,
-      rz: 0.2,
-      sx: 0.42,
-      sy: 0.13,
-      sz: 0.72,
-    },
-    {
-      mat: leafMat,
-      px: -0.2,
-      py: 1.18,
-      pz: -0.05,
-      rx: -0.28,
-      ry: -0.4,
-      rz: -0.05,
-      sx: 0.5,
-      sy: 0.17,
-      sz: 0.85,
-    },
-    {
-      mat: leafDarkMat,
-      px: 0.2,
-      py: 1.18,
-      pz: -0.05,
-      rx: -0.28,
-      ry: 0.4,
-      rz: 0.05,
-      sx: 0.5,
-      sy: 0.17,
-      sz: 0.85,
-    },
-  ];
-  extraLeaves.forEach((leaf) =>
-    makeLeafDetailed(
-      leaf.mat,
-      leaf.px,
-      leaf.py,
-      leaf.pz,
-      leaf.rx,
-      leaf.ry,
-      leaf.rz,
-      leaf.sx,
-      leaf.sy,
-      leaf.sz,
-    ),
-  );
+  pencilEraser(-0.06, 0.02, 0.7, -0.05, 0.16, pencilMatYellow);
+  pencilEraser(0.02, -0.04, 0.76, 0.08, -0.12, pencilMatYellow);
+  pencilEraser(0.08, 0.03, 0.64, -0.03, -0.24, leafDarkMat);
 
   // Paper Stack
   const paperStack = new THREE.Group();
   const papers = [
     {
-      pw: 1.35,
-      pd: 1.05,
+      pw: 1.7,
+      pd: 1.32,
       yOffset: 0.012,
       ry: Math.PI / 2 + 0.05,
       x: -3,
       z: 0.2,
     },
     {
-      pw: 1.3,
-      pd: 1.0,
+      pw: 1.64,
+      pd: 1.26,
       yOffset: 0.024,
       ry: Math.PI / 2 + 0.12,
       x: -2.98,
       z: 0.21,
     },
     {
-      pw: 1.28,
-      pd: 0.98,
+      pw: 1.6,
+      pd: 1.22,
       yOffset: 0.036,
       ry: Math.PI / 2 - 0.08,
       x: -2.95,
       z: 0.19,
     },
     {
-      pw: 1.25,
-      pd: 0.95,
+      pw: 1.56,
+      pd: 1.18,
       yOffset: 0.048,
       ry: Math.PI / 2 + 0.22,
       x: -2.92,
@@ -652,42 +450,6 @@ export function createDeskScene(scene) {
   });
   sceneRoot.add(paperStack);
 
-  // Pencil holder
-  const holderGroup = new THREE.Group();
-  holderGroup.position.set(-2.2, DESK_Y + 0.04, -0.7);
-  sceneRoot.add(holderGroup);
-
-  const holderMat = new THREE.MeshStandardMaterial({
-    color: 0x5c3317,
-    roughness: 0.7,
-  });
-  holderGroup.add(cyl(0.12, 0.1, 0.25, 16, holderMat, 0, 0.125, 0));
-
-  const pencilColors = [0xffd700, 0xff6b6b, 0x6bcbff, 0xaaffaa, 0xffaaff];
-  for (let p = 0; p < 5; p++) {
-    const angle = (p / 5) * Math.PI * 2;
-    const r = 0.06;
-    const lean = 0.08;
-    const pMat = new THREE.MeshStandardMaterial({
-      color: pencilColors[p],
-      roughness: 0.6,
-    });
-    const pencil = cyl(
-      0.018,
-      0.018,
-      0.52,
-      8,
-      pMat,
-      Math.sin(angle) * r,
-      0.3,
-      Math.cos(angle) * r,
-      Math.sin(angle) * lean * -1.6,
-      0,
-      -Math.cos(angle) * lean * -1.6,
-    );
-    holderGroup.add(pencil);
-  }
-
   // Folder
   const folderGroup = new THREE.Group();
   folderGroup.position.set(3.0, DESK_Y, 0.3);
@@ -705,9 +467,9 @@ export function createDeskScene(scene) {
     side: THREE.DoubleSide,
   });
 
-  const fw = 1.2,
+  const fw = 1.58,
     fh = 0.008,
-    fd = 1.4;
+    fd = 1.82;
   folderGroup.add(box(fw, fh, fd, folderMat, 0, fh / 2, 0));
 
   const tabW = 0.1,
