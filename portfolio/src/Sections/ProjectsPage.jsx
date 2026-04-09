@@ -116,6 +116,11 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => {
+    document.body.classList.toggle("desktop-open", showDesktop);
+    return () => document.body.classList.remove("desktop-open");
+  }, [showDesktop]);
+
+  useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
 

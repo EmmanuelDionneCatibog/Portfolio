@@ -41,8 +41,65 @@ const cyl = (
   return m;
 };
 
+const addKeyboardKey = (
+  parent,
+  {
+    width,
+    depth,
+    x,
+    z,
+    y,
+    material,
+    height = 0.04,
+    inset = 0.018,
+  },
+) => {
+  parent.add(box(Math.max(0.04, width - inset), height, depth, material, x, y, z));
+};
+
+const createWoodTexture = (baseHex, grainHex) => {
+  const size = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = `#${baseHex.toString(16).padStart(6, "0")}`;
+  ctx.fillRect(0, 0, size, size);
+
+  for (let y = 0; y < size; y += 3) {
+    const alpha = 0.06 + ((Math.sin(y * 0.12) + 1) * 0.5) * 0.08;
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.fillRect(0, y, size, 1);
+  }
+
+  ctx.strokeStyle = `#${grainHex.toString(16).padStart(6, "0")}`;
+  ctx.lineWidth = 1.2;
+  for (let i = 0; i < 34; i++) {
+    const y = (i / 34) * size;
+    ctx.globalAlpha = 0.18 + (i % 4) * 0.03;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    for (let x = 0; x <= size; x += 24) {
+      const offset = Math.sin((x + i * 13) * 0.05) * 4;
+      ctx.lineTo(x, y + offset);
+    }
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2.8, 1.4);
+  texture.anisotropy = 4;
+  return texture;
+};
+
 export function createDeskScene(scene) {
   const DESK_Y = 0;
+  const deskWoodMap = createWoodTexture(0x3d1f08, 0x6a3a16);
+  const deskLegWoodMap = createWoodTexture(0x4a2810, 0x73401a);
 
   // Materials
   const bodyMat = new THREE.MeshStandardMaterial({
@@ -96,12 +153,14 @@ export function createDeskScene(scene) {
     emissiveIntensity: 1.2,
   });
   const deskMat = new THREE.MeshStandardMaterial({
-    color: 0x6b3f1e,
-    roughness: 0.7,
+    color: 0x3d1f08,
+    roughness: 0.75,
+    map: deskWoodMap,
   });
   const deskLegMat = new THREE.MeshStandardMaterial({
-    color: 0x4a2a10,
-    roughness: 0.8,
+    color: 0x4a2810,
+    roughness: 0.75,
+    map: deskLegWoodMap,
   });
   const paperMats = [
     new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
@@ -167,9 +226,9 @@ export function createDeskScene(scene) {
   base.add(box(3.4, 0.1, 2.2, bodyMat));
   base.add(
     box(
-      3.1,
+      2.96,
       0.012,
-      1.8,
+      1.42,
       new THREE.MeshStandardMaterial({
         color: 0x131323,
         roughness: 0.5,
@@ -177,49 +236,84 @@ export function createDeskScene(scene) {
       }),
       0,
       0.056,
-      -0.12,
+      -0.2,
     ),
   );
 
-  const rows = [
-    { z: -0.68, n: 13, kw: 0.17 },
-    { z: -0.44, n: 12, kw: 0.19 },
-    { z: -0.2, n: 11, kw: 0.21 },
-    { z: 0.04, n: 10, kw: 0.23 },
-  ];
-  rows.forEach(({ z, n, kw }) => {
-    const total = n * kw + (n - 1) * 0.04;
-    for (let i = 0; i < n; i++) {
-      const kx = -total / 2 + i * (kw + 0.04) + kw / 2;
-      base.add(box(kw - 0.02, 0.04, 0.16, keyMat, kx, 0.077, z));
-    }
+  const keyY = 0.077;
+  const unitW = 0.164;
+  const unitGap = 0.034;
+  const alphaDepth = 0.155;
+  const keyboardLeft = -1.42;
+  const keyboardRight = 1.4;
+  const getWidthFromUnits = (units, gap = unitGap) =>
+    units * unitW + (units - 1) * gap;
+  const getSpecWidth = (spec, gap = unitGap) =>
+    typeof spec === "number" ? getWidthFromUnits(spec, gap) : spec.width;
+  const getRowWidthExcludingLast = (specs, gap = unitGap) =>
+    specs.slice(0, -1).reduce((total, spec) => total + getSpecWidth(spec, gap), 0) +
+    Math.max(0, specs.length - 1) * gap;
+
+  const addRow = (z, specs, options = {}) => {
+    const {
+      left = keyboardLeft,
+      gap = unitGap,
+      keyDepth = alphaDepth,
+      keyHeight = 0.04,
+      inset = 0.018,
+    } = options;
+    let cursor = left;
+    specs.forEach((spec) => {
+      const width = getSpecWidth(spec, gap);
+      const centerX = cursor + width / 2;
+      addKeyboardKey(base, {
+        width,
+        depth: keyDepth,
+        x: centerX,
+        z,
+        y: keyY,
+        material: keyMat,
+        height: keyHeight,
+        inset,
+      });
+      cursor += width + gap;
+    });
+  };
+
+  addRow(-0.6, [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5]);
+  const secondRow = [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  secondRow[secondRow.length - 1] = {
+    width: keyboardRight - (keyboardLeft + getRowWidthExcludingLast(secondRow)),
+  };
+  addRow(-0.37, secondRow);
+
+  const thirdRow = [1.8, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  thirdRow[thirdRow.length - 1] = {
+    width: keyboardRight - (keyboardLeft + getRowWidthExcludingLast(thirdRow)),
+  };
+  addRow(-0.14, thirdRow);
+
+  const fourthRow = [2.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+  fourthRow.splice(fourthRow.length - 1, 0, 1);
+  fourthRow[fourthRow.length - 1] = {
+    width: keyboardRight - (keyboardLeft + getRowWidthExcludingLast(fourthRow)),
+  };
+  addRow(0.09, fourthRow);
+
+  const bottomZ = 0.33;
+  const bottomRow = [1.25, 1.25, 1.25, 6.2, 1, 1, 1, 1];
+  bottomRow[bottomRow.length - 1] = {
+    width: keyboardRight - (keyboardLeft + getRowWidthExcludingLast(bottomRow)),
+  };
+  addRow(bottomZ, bottomRow, {
+    keyDepth: 0.145,
   });
 
-  const bottomZ = 0.28,
-    keyH = 0.04,
-    keyD = 0.16,
-    keyY = 0.077;
-  [
-    { w: 0.22, x: -1.12 },
-    { w: 0.22, x: -0.86 },
-    { w: 0.22, x: -0.6 },
-  ].forEach(({ w, x }) => {
-    base.add(box(w - 0.02, keyH, keyD, keyMat, x, keyY, bottomZ));
-  });
-  base.add(box(0.8 - 0.02, keyH, keyD, keyMat, -0.06, keyY, bottomZ));
-  [
-    { w: 0.22, x: 0.48 },
-    { w: 0.22, x: 0.74 },
-    { w: 0.22, x: 1.0 },
-    { w: 0.22, x: 1.26 },
-  ].forEach(({ w, x }) => {
-    base.add(box(w - 0.02, keyH, keyD, keyMat, x, keyY, bottomZ));
-  });
   base.add(
     box(
       0.95,
       0.005,
-      0.58,
+      0.76,
       new THREE.MeshStandardMaterial({
         color: 0x181828,
         roughness: 0.12,
@@ -227,7 +321,7 @@ export function createDeskScene(scene) {
       }),
       0,
       0.059,
-      0.62,
+      0.7,
     ),
   );
   [-0.75, 0.75].forEach((x) =>
@@ -259,6 +353,7 @@ export function createDeskScene(scene) {
   // Lamp
   const lamp = new THREE.Group();
   lamp.position.set(3.6, DESK_Y, -1.2);
+  lamp.rotation.y = Math.PI / 9;
   sceneRoot.add(lamp);
   lamp.add(cyl(0.3, 0.45, 0.07, 24, lampBaseMat, 0, 0.035, 0));
   lamp.add(cyl(0.055, 0.055, 0.12, 12, lampArmMat, 0, 0.11, 0));
@@ -324,6 +419,10 @@ export function createDeskScene(scene) {
   });
   const pencilMatYellow = new THREE.MeshStandardMaterial({
     color: 0xe1b53a,
+    roughness: 0.7,
+  });
+  const pencilMatBlue = new THREE.MeshStandardMaterial({
+    color: 0x4f86d9,
     roughness: 0.7,
   });
   const pencilMatPink = new THREE.MeshStandardMaterial({
@@ -394,7 +493,7 @@ export function createDeskScene(scene) {
   };
 
   pencilEraser(-0.06, 0.02, 0.7, -0.05, 0.16, pencilMatYellow);
-  pencilEraser(0.02, -0.04, 0.76, 0.08, -0.12, pencilMatYellow);
+  pencilEraser(0.02, -0.04, 0.76, 0.08, -0.12, pencilMatBlue);
   pencilEraser(0.08, 0.03, 0.64, -0.03, -0.24, leafDarkMat);
 
   // Paper Stack
