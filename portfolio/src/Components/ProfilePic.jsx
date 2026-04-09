@@ -151,12 +151,11 @@ const ClipArtCat = ({ pupilOffset }) => {
   );
 };
 
-const SIZE = 340;
-
 export default function ProfilePic() {
   const [clicked, setClicked] = useState(false);
   const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef(null);
+  const size = "min(340px, 78vw)";
 
   const handleMouseMove = (e) => {
     if (!clicked) return;
@@ -187,14 +186,14 @@ export default function ProfilePic() {
   });
 
   return (
-    <div style={{ position: "relative", width: SIZE, height: SIZE }}>
+    <div style={{ position: "relative", width: size, height: size }}>
       <div
         ref={containerRef}
         onClick={handleClick}
         onMouseMove={handleMouseMove}
         style={{
-          width: SIZE,
-          height: SIZE,
+          width: "100%",
+          height: "100%",
           borderRadius: "50%",
           border: "2px solid #db9834",
           cursor: "pointer",

@@ -395,21 +395,22 @@ export function VideoPlayerWindow({
   );
 }
 
-function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
+function MediaRow({ thumb, label, isLast, onClick, hasAction, compact }) {
   return (
     <div
       style={{
         display: "flex",
-        alignItems: "center",
-        gap: "12px",
+        flexDirection: compact ? "column" : "row",
+        alignItems: compact ? "flex-start" : "center",
+        gap: compact ? "10px" : "12px",
         padding: "8px 0",
         borderBottom: isLast ? "none" : "1px solid rgba(219,152,52,0.07)",
       }}>
       <div
         onClick={onClick}
         style={{
-          width: "72px",
-          height: "72px",
+          width: compact ? "100%" : "72px",
+          height: compact ? "140px" : "72px",
           flexShrink: 0,
           cursor: hasAction ? "pointer" : "default",
           transition: "opacity 0.15s",
@@ -430,6 +431,7 @@ function MediaRow({ thumb, label, isLast, onClick, hasAction }) {
           lineHeight: 1.4,
           flex: 1,
           wordBreak: "break-word",
+          width: "100%",
         }}>
         {label}
       </span>
@@ -730,6 +732,7 @@ export default function FolderWindow({
             thumb={iconThumb}
             label={project.iconLabel || `${project.name} Website`}
             hasAction={!!project.url}
+            compact={isCompact}
             onClick={() => project.url && window.open(project.url, "_blank")}
           />
 
@@ -739,6 +742,7 @@ export default function FolderWindow({
                 thumb={videoThumb(project.video)}
                 label={project.videoLabel || "Demo Video"}
                 hasAction={!!project.video}
+                compact={isCompact}
                 onClick={() =>
                   project.video &&
                   onOpenVideo(project.video, project.videoLabel || project.name)
@@ -748,6 +752,7 @@ export default function FolderWindow({
                 thumb={videoThumb(project.video2)}
                 label={project.video2Label || "Demo Video 2"}
                 hasAction={!!project.video2}
+                compact={isCompact}
                 onClick={() =>
                   project.video2 &&
                   onOpenVideo(
@@ -764,11 +769,13 @@ export default function FolderWindow({
                 thumb={imgThumb(project.image, "screenshot")}
                 label={project.imageLabel || "Screenshot"}
                 hasAction={false}
+                compact={isCompact}
               />
               <MediaRow
                 thumb={videoThumb(project.video)}
                 label={project.videoLabel || "Demo Video"}
                 hasAction={!!project.video}
+                compact={isCompact}
                 onClick={() =>
                   project.video &&
                   onOpenVideo(project.video, project.videoLabel || project.name)

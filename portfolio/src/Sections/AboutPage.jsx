@@ -218,7 +218,7 @@ function CarouselRow({ items, direction = 1, speed = 28 }) {
           return (
             <div key={`${name}-${i}`} className="tech-card">
               {Icon ? (
-                <Icon size={42} />
+                <Icon size={36} />
               ) : (
                 <div className="tech-card-placeholder">{name.slice(0, 3)}</div>
               )}
@@ -265,15 +265,8 @@ export default function AboutPage() {
     <div className="about-page">
       <div ref={sectionRef} className="about-container">
         <div className="about-content">
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "48px",
-              marginBottom: "48px",
-            }}>
-            {/* Left Column */}
-            <div>
+          <div className="about-hero">
+            <div className="about-hero-text">
               <div style={fadeUp(0.1)}>
                 <p className="about-intro">Hi, my name is</p>
                 <h1 className="about-title">Emmanuel Dionne B. Catibog</h1>
@@ -321,39 +314,16 @@ export default function AboutPage() {
               </div>
             </div>
 
-            {/* Right Column */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "flex-start",
-                gap: "32px",
-                ...fadeUp(0.2),
-              }}>
+            <div className="about-hero-media" style={fadeUp(0.2)}>
               <ProfilePic />
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "20px",
-                  justifyContent: "center",
-                }}>
+              <div className="about-socials">
                 {/* GitHub */}
                 <a
                   href="https://github.com/EmmanuelDionneCatibog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#1a1a2a",
-                    borderRadius: "50%",
-                    transition: "transform 0.2s, background-color 0.2s",
-                  }}
+                  className="about-social-link"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "scale(1.1)";
                     e.currentTarget.style.backgroundColor = "#333";
@@ -376,16 +346,7 @@ export default function AboutPage() {
                   href="https://www.facebook.com/emmanueldionne.catibog"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#1a1a2a",
-                    borderRadius: "50%",
-                    transition: "transform 0.2s, background-color 0.2s",
-                  }}
+                  className="about-social-link"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "scale(1.1)";
                     e.currentTarget.style.backgroundColor = "#1877f2";
@@ -409,16 +370,7 @@ export default function AboutPage() {
                   href="https://www.linkedin.com/in/emmanuel-dionne-catibog-57344a3b9"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    width: "48px",
-                    height: "48px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "#1a1a2a",
-                    borderRadius: "50%",
-                    transition: "transform 0.2s, background-color 0.2s",
-                  }}
+                  className="about-social-link"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.transform = "scale(1.1)";
                     e.currentTarget.style.backgroundColor = "#0a66c2";
@@ -440,18 +392,7 @@ export default function AboutPage() {
 
               <button
                 onClick={handleDownloadResume}
-                style={{
-                  padding: "12px 28px",
-                  fontSize: "16px",
-                  fontWeight: "600",
-                  color: "#fff",
-                  backgroundColor: "#db9834",
-                  border: "none",
-                  borderRadius: "8px",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 4px 12px rgba(219,152,52,0.3)",
-                }}
+                className="about-resume-button"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-2px)";
                   e.currentTarget.style.boxShadow =

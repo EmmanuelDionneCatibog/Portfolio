@@ -31,6 +31,43 @@ export default function NavBar() {
   return (
     <>
       <style>{`
+        .site-nav {
+          position: fixed;
+          top: 0;
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: clamp(15px, 2.5vh, 22px) clamp(24px, 5vw, 60px);
+          background: #1c1c2c;
+          box-sizing: border-box;
+          z-index: 1000;
+          gap: 12px;
+          transition: transform 0.3s ease;
+        }
+        body.desktop-open .site-nav {
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+        }
+        .site-nav-brand {
+          color: #db9834;
+          font-size: clamp(1.1rem, 2vw, 1.4rem);
+          font-weight: 600;
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-family: inherit;
+          padding: 0;
+          flex-shrink: 0;
+        }
+        .site-nav-links {
+          display: flex;
+          gap: clamp(16px, 3vw, 32px);
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          align-items: center;
+        }
         .nav-link {
           position: relative;
           color: #d7c6ac;
@@ -52,46 +89,53 @@ export default function NavBar() {
         }
         .nav-link:hover::before { width: 100%; }
         .nav-link:hover { color: #db9834; transition: color 0.35s ease; }
+        @media (max-width: 640px) {
+          .site-nav {
+            padding: 12px 16px;
+            gap: 10px;
+            align-items: flex-start;
+          }
+          .site-nav-brand {
+            font-size: 1.15rem;
+            line-height: 1;
+            padding-top: 4px;
+          }
+          .site-nav-links {
+            gap: 12px;
+            justify-content: flex-end;
+            row-gap: 8px;
+            max-width: 70%;
+          }
+          .nav-link {
+            font-size: 0.9rem;
+          }
+        }
+        @media (max-width: 420px) {
+          .site-nav {
+            padding: 10px 12px;
+          }
+          .site-nav-links {
+            gap: 10px;
+            max-width: 72%;
+          }
+          .nav-link {
+            font-size: 0.82rem;
+          }
+        }
       `}</style>
 
       <nav
+        className="site-nav"
         style={{
-          position: "fixed",
-          top: 0,
-          width: "100%",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          padding: "clamp(15px, 2.5vh, 22px) clamp(24px, 5vw, 60px)",
-          background: "#1c1c2c",
-          boxSizing: "border-box",
-          zIndex: 1000,
-          flexWrap: "wrap",
-          gap: "12px",
           transform: visible ? "translateY(0)" : "translateY(-100%)",
-          transition: "transform 0.3s ease",
         }}>
         <button
           onClick={() => scrollTo("home")}
-          style={{
-            color: "#db9834",
-            fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
-            fontWeight: 600,
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            padding: 0,
-          }}>
+          className="site-nav-brand">
           DC
         </button>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "clamp(16px, 3vw, 32px)",
-            flexWrap: "wrap",
-          }}>
+        <div className="site-nav-links">
           {[
             { label: "About", id: "about" },
             { label: "Projects", id: "projects" },

@@ -17,6 +17,59 @@
   margin: 0 auto;
 }
 
+.about-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+  gap: 48px;
+  margin-bottom: 48px;
+  align-items: start;
+}
+
+.about-hero-text {
+  min-width: 0;
+}
+
+.about-hero-media {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 32px;
+}
+
+.about-socials {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.about-social-link {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1a1a2a;
+  border-radius: 50%;
+  transition:
+    transform 0.2s,
+    background-color 0.2s;
+}
+
+.about-resume-button {
+  padding: 12px 28px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background-color: #db9834;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(219, 152, 52, 0.3);
+}
+
 .about-subtitle {
   margin: 0 0 8px;
   color: rgba(215, 198, 172, 0.5);
@@ -242,4 +295,120 @@
   color: rgba(215, 198, 172, 0.45);
   font-size: 12px;
   letter-spacing: 0.05em;
+}
+
+@media (max-width: 900px) {
+  .about-container {
+    padding-left: clamp(20px, 5vw, 32px);
+    padding-right: clamp(20px, 5vw, 32px);
+    padding-bottom: 128px;
+  }
+
+  .about-hero {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .about-hero-media {
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .about-page {
+    padding-top: 56px;
+  }
+
+  .about-container {
+    padding-top: calc(clamp(18px, 4vh, 28px) + 56px);
+    padding-left: 18px;
+    padding-right: 18px;
+    padding-bottom: 104px;
+  }
+
+  .about-hero {
+    gap: 28px;
+    margin-bottom: 36px;
+  }
+
+  .about-hero-media {
+    gap: 22px;
+  }
+
+  .about-hero-text {
+    text-align: left;
+  }
+
+  .about-title {
+    font-size: clamp(2.2rem, 10vw, 3.2rem);
+    margin-bottom: 14px;
+  }
+
+  .about-intro {
+    font-size: 14px;
+    line-height: 1.7;
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-size: 17px;
+  }
+
+  .timeline-item {
+    padding-left: 20px;
+    padding-bottom: 22px;
+  }
+
+  .timeline-location {
+    font-size: 14px;
+  }
+
+  .timeline-title {
+    font-size: 12px;
+  }
+
+  .about-socials {
+    gap: 14px;
+  }
+
+  .about-social-link {
+    width: 44px;
+    height: 44px;
+  }
+
+  .about-resume-button {
+    width: min(100%, 240px);
+    padding: 11px 20px;
+    font-size: 15px;
+  }
+
+  .carousel-wrapper {
+    gap: 12px;
+  }
+
+  .carousel-row {
+    gap: 14px;
+  }
+
+  .tech-card {
+    width: 72px;
+    padding: 12px 10px;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .tech-card img {
+    width: 28px;
+    height: 28px;
+  }
+
+  .tech-card-placeholder {
+    width: 28px;
+    height: 28px;
+    font-size: 9px;
+  }
+
+  .tech-card-label {
+    font-size: 9px;
+  }
 }

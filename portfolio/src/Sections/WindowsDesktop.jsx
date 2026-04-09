@@ -175,20 +175,63 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           max-width: min(100vw - 20px, 520px);
         }
         @media (max-width: 720px) {
+          .wd-taskbar {
+            padding: 0 8px;
+            gap: 8px;
+          }
+          .wd-start-btn,
+          .wd-tab-list,
+          .wd-tray {
+            flex: 1 1 0;
+            min-width: 0;
+          }
+          .wd-start-btn {
+            justify-content: center;
+            padding-left: 8px;
+            padding-right: 8px;
+          }
+          .wd-tab-list {
+            margin-left: 0;
+            justify-content: center;
+          }
+          .wd-tray {
+            justify-content: center;
+            gap: 8px;
+          }
           .wd-icons-col {
             top: clamp(16px, 3vh, 28px);
             left: clamp(8px, 2vw, 12px);
-            right: clamp(8px, 2vw, 12px);
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
-            align-items: start;
-            justify-items: center;
+            right: auto;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: nowrap;
+            align-items: flex-start;
+            justify-items: initial;
             max-height: none;
-            max-width: none;
+            max-width: min(180px, calc(100vw - 24px));
             gap: 8px;
           }
         }
         @media (max-width: 520px) {
+          .wd-taskbar {
+            padding: 0 6px;
+            gap: 6px;
+          }
+          .wd-start-btn {
+            font-size: 10px;
+          }
+          .wd-tab-btn {
+            max-width: 100%;
+          }
+          .wd-tray {
+            gap: 6px;
+          }
+          .wd-clock-time {
+            font-size: 10px;
+          }
+          .wd-clock-date {
+            font-size: 8px;
+          }
           .wd-start-menu {
             width: calc(100vw - 16px);
             left: 8px;
