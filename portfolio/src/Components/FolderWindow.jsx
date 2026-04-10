@@ -21,20 +21,74 @@ function clampWindowPosition(pos, size, viewport, margin = 12) {
   };
 }
 
-const btnStyle = (bg, overrides = {}) => ({
-  width: "24px",
-  height: "20px",
-  background: bg,
-  border: "none",
-  borderRadius: "3px",
+const btnStyle = (variant = "default", overrides = {}) => ({
+  width: "30px",
+  height: "24px",
+  background:
+    variant === "close" ? "rgba(168,43,43,0.9)" : "rgba(255,255,255,0.03)",
+  border: "1px solid",
+  borderColor:
+    variant === "close"
+      ? "rgba(255,120,120,0.22)"
+      : "rgba(255,255,255,0.06)",
+  borderRadius: "5px",
   color: "#d7c6ac",
-  fontSize: "11px",
   cursor: "pointer",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
+  transition: "background 0.15s ease, transform 0.15s ease, opacity 0.15s ease",
+  padding: 0,
   ...overrides,
 });
+
+function WindowControlIcon({ type, restore }) {
+  if (type === "minimize") {
+    return (
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M2 7.25H8" stroke="currentColor" strokeWidth="1.4" />
+      </svg>
+    );
+  }
+
+  if (type === "maximize") {
+    return restore ? (
+      <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+        <rect
+          x="3.25"
+          y="1.75"
+          width="5"
+          height="5"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+        <path
+          d="M2.25 4.25V8.25H6.25"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+      </svg>
+    ) : (
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <rect
+          x="2"
+          y="2"
+          width="6"
+          height="6"
+          stroke="currentColor"
+          strokeWidth="1.2"
+        />
+      </svg>
+    );
+  }
+
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+      <path d="M2.2 2.2L7.8 7.8" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M7.8 2.2L2.2 7.8" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
 
 const ImgPlaceholder = ({ label }) => (
   <div
@@ -339,25 +393,25 @@ export function VideoPlayerWindow({
           onMouseDown={(event) => event.stopPropagation()}>
           <button
             onClick={onMinimize}
-            style={btnStyle("#25263a")}
+            style={btnStyle()}
             title="Minimize">
-            -
+            <WindowControlIcon type="minimize" />
           </button>
           <button
             disabled={isCompact}
             onClick={() => setFull((value) => !value)}
-            style={btnStyle("#25263a", {
+            style={btnStyle("default", {
               opacity: isCompact ? 0.45 : 1,
               cursor: isCompact ? "default" : "pointer",
             })}
             title={full ? "Restore" : "Maximize"}>
-            {useFullscreen ? "[]" : "[ ]"}
+            <WindowControlIcon type="maximize" restore={useFullscreen} />
           </button>
           <button
             onClick={onClose}
-            style={btnStyle("rgba(200,40,40,0.75)")}
+            style={btnStyle("close")}
             title="Close">
-            x
+            <WindowControlIcon type="close" />
           </button>
         </div>
       </div>
@@ -657,25 +711,25 @@ export default function FolderWindow({
           onMouseDown={(event) => event.stopPropagation()}>
           <button
             onClick={onMinimize}
-            style={btnStyle("#25263a")}
+            style={btnStyle()}
             title="Minimize">
-            -
+            <WindowControlIcon type="minimize" />
           </button>
           <button
             disabled={isCompact}
             onClick={() => setFull((value) => !value)}
-            style={btnStyle("#25263a", {
+            style={btnStyle("default", {
               opacity: isCompact ? 0.45 : 1,
               cursor: isCompact ? "default" : "pointer",
             })}
             title={full ? "Restore" : "Maximize"}>
-            {useFullscreen ? "[]" : "[ ]"}
+            <WindowControlIcon type="maximize" restore={useFullscreen} />
           </button>
           <button
             onClick={onClose}
-            style={btnStyle("rgba(200,40,40,0.75)")}
+            style={btnStyle("close")}
             title="Close">
-            x
+            <WindowControlIcon type="close" />
           </button>
         </div>
       </div>

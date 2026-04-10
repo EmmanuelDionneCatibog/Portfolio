@@ -1,0 +1,240 @@
+.wd-sticky-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 170;
+  pointer-events: none;
+}
+
+.wd-sticky-card {
+  position: absolute;
+  width: min(334px, calc(100vw - 32px));
+  min-height: 312px;
+  background: linear-gradient(180deg, rgba(210,242,196,0.98) 0%, rgba(233,248,214,0.98) 100%);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 44px rgba(0,0,0,0.26),
+    0 0 0 1px rgba(101,124,93,0.16);
+  color: #243123;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.wd-sticky-card.maximized {
+  width: min(420px, calc(100vw - 24px));
+  min-height: min(78vh, 560px);
+}
+
+.wd-sticky-topbar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  background: linear-gradient(180deg, rgba(193,235,177,0.98) 0%, rgba(216,246,202,0.92) 100%);
+  border-bottom: 1px solid rgba(106,132,94,0.14);
+  cursor: move;
+}
+
+.wd-sticky-topbar-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wd-sticky-icon-btn {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.86;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.wd-sticky-icon-btn:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.wd-sticky-editor {
+  flex: 1;
+  padding: 14px 14px 10px;
+  outline: none;
+  overflow-y: auto;
+  color: #273226;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.wd-sticky-toolbar {
+  height: 40px;
+  border-top: 1px solid rgba(106,132,94,0.14);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+}
+
+.wd-sticky-tool-btn {
+  width: 34px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #3f4a3d;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.14s ease;
+}
+
+.wd-sticky-tool-btn:hover {
+  background: rgba(76,94,68,0.08);
+}
+
+.wd-sticky-tool-btn svg {
+  display: block;
+}
+
+.wd-sticky-history {
+  position: absolute;
+  top: 28px;
+  right: 18px;
+  width: min(360px, calc(100vw - 24px));
+  max-height: min(72vh, 620px);
+  border-radius: 12px;
+  background: rgba(250,248,247,0.98);
+  color: #212121;
+  box-shadow: 0 26px 48px rgba(0,0,0,0.3);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.wd-sticky-history-head {
+  padding: 18px 18px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wd-sticky-history-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.wd-sticky-history-close {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.86;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.wd-sticky-history-close:hover {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.wd-sticky-history-search {
+  padding: 0 18px 14px;
+}
+
+.wd-sticky-history-searchbox {
+  height: 36px;
+  background: #ece8e8;
+  display: flex;
+  align-items: center;
+  padding: 0 8px 0 12px;
+  gap: 8px;
+}
+
+.wd-sticky-history-input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #343434;
+  font-size: 14px;
+}
+
+.wd-sticky-history-input::placeholder {
+  color: #7b7b7b;
+}
+
+.wd-sticky-history-searchbtn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.wd-sticky-history-list {
+  padding: 0 18px 18px;
+  overflow-y: auto;
+  max-height: calc(min(72vh, 620px) - 90px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wd-sticky-history-item {
+  border: 0;
+  text-align: left;
+  border-radius: 4px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #dff3d2 0%, #d6efc6 100%);
+  color: #273226;
+  cursor: pointer;
+}
+
+.wd-sticky-history-date {
+  display: block;
+  text-align: right;
+  color: #6a7766;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+.wd-sticky-history-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.wd-sticky-history-empty {
+  padding: 16px 8px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+@media (max-width: 520px) {
+  .wd-sticky-card,
+  .wd-sticky-card.maximized,
+  .wd-sticky-history {
+    width: calc(100vw - 24px);
+  }
+}

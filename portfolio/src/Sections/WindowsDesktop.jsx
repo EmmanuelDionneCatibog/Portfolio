@@ -1,13 +1,68 @@
 import { useEffect, useRef, useState } from "react";
 import FolderIcon from "../Components/FolderIcon";
 import FolderWindow, { VideoPlayerWindow } from "../Components/FolderWindow";
+import StickyNotesLayer, {
+  StickyNotesTaskbarTabs,
+  createStickyNote,
+} from "../Components/StickyNotesLayer";
 import { PROJECTS } from "./constants";
+
+function TrayVolumeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M2.25 5.4H4.2L6.55 3.2V10.8L4.2 8.6H2.25V5.4Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.15 5.15C8.8 5.6 9.2 6.28 9.2 7C9.2 7.72 8.8 8.4 8.15 8.85"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.55 3.95C10.58 4.7 11.2 5.8 11.2 7C11.2 8.2 10.58 9.3 9.55 10.05"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function TrayWifiIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path
+        d="M2.1 5.3C4.95 2.95 9.05 2.95 11.9 5.3"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M3.95 7.15C5.78 5.65 8.22 5.65 10.05 7.15"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5.8 9.05C6.48 8.48 7.52 8.48 8.2 9.05"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+      />
+      <circle cx="7" cy="10.95" r="1.05" fill="currentColor" />
+    </svg>
+  );
+}
 
 export default function WindowsDesktop({ visible, onShutdown }) {
   const [windows, setWindows] = useState([]);
   const [zOrders, setZOrders] = useState([]);
   const [time, setTime] = useState("");
   const [startOpen, setStartOpen] = useState(false);
+  const [stickyNotes, setStickyNotes] = useState(() => [createStickyNote(0)]);
+  const [activeStickyId, setActiveStickyId] = useState(0);
   const nextId = useRef(0);
 
   useEffect(() => {
@@ -22,6 +77,19 @@ export default function WindowsDesktop({ visible, onShutdown }) {
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!stickyNotes.length) {
+      const replacement = createStickyNote(0);
+      setStickyNotes([replacement]);
+      setActiveStickyId(replacement.id);
+      return;
+    }
+
+    if (!stickyNotes.some((note) => note.id === activeStickyId)) {
+      setActiveStickyId(stickyNotes[0].id);
+    }
+  }, [activeStickyId, stickyNotes]);
 
   const openWindow = (projIdx) => {
     const id = nextId.current++;
@@ -45,25 +113,28 @@ export default function WindowsDesktop({ visible, onShutdown }) {
     setWindows((w) => w.filter((x) => x.id !== id));
     setZOrders((z) => z.filter((x) => x !== id));
   };
+
   const minimizeWindow = (id) => {
     setWindows((w) =>
       w.map((x) => (x.id === id ? { ...x, minimized: true } : x)),
     );
   };
+
   const focusWindow = (id) => {
     setZOrders((z) => [...z.filter((x) => x !== id), id]);
   };
+
   const restoreWindow = (id) => {
     setWindows((w) =>
       w.map((x) => (x.id === id ? { ...x, minimized: false } : x)),
     );
     focusWindow(id);
   };
+
   const getZ = (id) => 10 + zOrders.indexOf(id);
 
   return (
     <>
-      {/* Responsive styles for the desktop environment */}
       <style>{`
         .wd-root {
           position: fixed;
@@ -89,24 +160,54 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           z-index: 200;
         }
         .wd-start-btn {
-          display: flex;
+          width: clamp(34px, 4.6vh, 40px);
+          height: clamp(30px, 4.2vh, 36px);
+          display: inline-flex;
           align-items: center;
-          gap: clamp(4px, 0.6vw, 8px);
-          padding: clamp(3px, 0.4vh, 5px) clamp(8px, 1vw, 14px);
-          background: rgba(255,255,255,0.06);
-          border: 1px solid rgba(219,152,52,0.25);
-          border-radius: 5px;
-          color: #d7c6ac;
-          font-size: clamp(11px, 1vw, 13px);
-          font-weight: 600;
+          justify-content: center;
+          padding: 0;
+          background: transparent;
+          border: 0;
+          border-radius: 8px;
           cursor: pointer;
-          font-family: system-ui, sans-serif;
-          transition: background 0.15s;
-          white-space: nowrap;
+          transition:
+            background 0.16s ease,
+            box-shadow 0.16s ease,
+            transform 0.16s ease;
           flex-shrink: 0;
         }
+        .wd-start-btn:hover {
+          background: rgba(255,255,255,0.08);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
         .wd-start-btn.open {
-          background: rgba(219,152,52,0.2);
+          background: rgba(219,152,52,0.16);
+          box-shadow:
+            inset 0 0 0 1px rgba(219,152,52,0.22),
+            0 0 18px rgba(219,152,52,0.14);
+        }
+        .wd-start-btn:active {
+          transform: translateY(1px) scale(0.98);
+        }
+        .wd-start-icon {
+          width: clamp(16px, 2.1vh, 20px);
+          height: clamp(16px, 2.1vh, 20px);
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          grid-template-rows: 1fr 1fr;
+          gap: 2px;
+          transform: perspective(24px) rotateY(-12deg);
+          filter: drop-shadow(0 1px 0 rgba(0,0,0,0.25));
+        }
+        .wd-start-icon-pane {
+          border-radius: 1px;
+          background: linear-gradient(180deg, #7ec3ff 0%, #2f86ff 100%);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.45),
+            0 0 0 1px rgba(17,45,89,0.28);
+        }
+        .wd-start-btn.open .wd-start-icon-pane {
+          background: linear-gradient(180deg, #ffd196 0%, #db9834 100%);
         }
         .wd-tab-list {
           display: flex;
@@ -117,7 +218,9 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           overflow-x: auto;
           scrollbar-width: none;
         }
-        .wd-tab-list::-webkit-scrollbar { display: none; }
+        .wd-tab-list::-webkit-scrollbar {
+          display: none;
+        }
         .wd-tab-btn {
           display: flex;
           align-items: center;
@@ -145,8 +248,20 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           flex-shrink: 0;
         }
         .wd-tray-icon {
-          color: rgba(215,198,172,0.4);
-          font-size: clamp(13px, 1.4vw, 16px);
+          width: clamp(24px, 3.2vh, 28px);
+          height: clamp(24px, 3.2vh, 28px);
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(215,198,172,0.62);
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.05);
+          border-radius: 7px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+        }
+        .wd-tray-icon svg {
+          width: clamp(13px, 1.4vw, 15px);
+          height: clamp(13px, 1.4vw, 15px);
         }
         .wd-clock {
           text-align: right;
@@ -187,8 +302,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           }
           .wd-start-btn {
             justify-content: center;
-            padding-left: 8px;
-            padding-right: 8px;
           }
           .wd-tab-list {
             margin-left: 0;
@@ -218,7 +331,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
             gap: 6px;
           }
           .wd-start-btn {
-            font-size: 10px;
+            width: 34px;
           }
           .wd-tab-btn {
             max-width: 100%;
@@ -281,7 +394,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           pointerEvents: visible ? "auto" : "none",
         }}
         onClick={() => setStartOpen(false)}>
-        {/* Wallpaper */}
         <div
           style={{
             position: "absolute",
@@ -300,7 +412,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           />
         </div>
 
-        {/* Desktop icons — left column */}
         <div className="wd-icons-col" onClick={(e) => e.stopPropagation()}>
           {PROJECTS.map((proj, i) => (
             <FolderIcon
@@ -311,7 +422,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           ))}
         </div>
 
-        {/* Windows */}
         {windows.map((win) => {
           if (win.minimized) return null;
           if (win.type === "video") {
@@ -327,6 +437,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
               />
             );
           }
+
           return (
             <FolderWindow
               key={win.id}
@@ -340,17 +451,27 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           );
         })}
 
-        {/* ── TASKBAR ── */}
+        <StickyNotesLayer
+          stickyNotes={stickyNotes}
+          setStickyNotes={setStickyNotes}
+          activeStickyId={activeStickyId}
+          setActiveStickyId={setActiveStickyId}
+        />
+
         <div className="wd-taskbar" onClick={(e) => e.stopPropagation()}>
-          {/* Start button */}
           <button
             className={`wd-start-btn${startOpen ? " open" : ""}`}
-            onClick={() => setStartOpen((s) => !s)}>
-            <span style={{ fontSize: "clamp(13px, 1.3vw, 16px)" }}>⊞</span>{" "}
-            Start
+            onClick={() => setStartOpen((s) => !s)}
+            aria-label="Open Start menu"
+            title="Start">
+            <span className="wd-start-icon" aria-hidden="true">
+              <span className="wd-start-icon-pane" />
+              <span className="wd-start-icon-pane" />
+              <span className="wd-start-icon-pane" />
+              <span className="wd-start-icon-pane" />
+            </span>
           </button>
 
-          {/* Open window tabs */}
           <div className="wd-tab-list">
             {windows.map((win) => (
               <button
@@ -378,12 +499,37 @@ export default function WindowsDesktop({ visible, onShutdown }) {
                 {win.type === "video" ? win.title : PROJECTS[win.projIdx].name}
               </button>
             ))}
+
+            <StickyNotesTaskbarTabs
+              stickyNotes={stickyNotes}
+              activeStickyId={activeStickyId}
+              onRestore={(id) => {
+                setStickyNotes((notes) =>
+                  notes.map((note) =>
+                    note.id === id ? { ...note, minimized: false } : note,
+                  ),
+                );
+                setActiveStickyId(id);
+              }}
+              onMinimize={(id) => {
+                setStickyNotes((notes) =>
+                  notes.map((note) =>
+                    note.id === id
+                      ? { ...note, minimized: true, maximized: false }
+                      : note,
+                  ),
+                );
+              }}
+            />
           </div>
 
-          {/* Clock + tray */}
           <div className="wd-tray">
-            <span className="wd-tray-icon">🔊</span>
-            <span className="wd-tray-icon">📶</span>
+            <span className="wd-tray-icon" aria-label="Volume">
+              <TrayVolumeIcon />
+            </span>
+            <span className="wd-tray-icon" aria-label="Wi-Fi">
+              <TrayWifiIcon />
+            </span>
             <div className="wd-clock">
               <div className="wd-clock-time">{time}</div>
               <div className="wd-clock-date">
@@ -397,7 +543,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           </div>
         </div>
 
-        {/* Start menu */}
         {startOpen && (
           <div className="wd-start-menu" onClick={(e) => e.stopPropagation()}>
             <div className="wd-start-menu-title">Dionne Catibog</div>
