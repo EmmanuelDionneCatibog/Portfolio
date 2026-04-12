@@ -1,0 +1,8 @@
+{
+  "name": "portfolio-backend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node -e \"console.log('Backend folder is ready. Add your server here when needed.')\""
+  }
+}

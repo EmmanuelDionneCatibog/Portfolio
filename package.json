@@ -1,6 +1,11 @@
 {
-  "dependencies": {
-    "bootstrap": "^5.2.3",
-    "three": "^0.183.2"
+  "name": "portfolio-monorepo",
+  "private": true,
+  "scripts": {
+    "backend:dev": "npm run dev --prefix backend",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "frontend:build": "npm run build --prefix frontend",
+    "frontend:preview": "npm run preview --prefix frontend",
+    "frontend:lint": "npm run lint --prefix frontend"
   }
 }

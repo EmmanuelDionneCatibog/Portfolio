@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/sticky-notes.css";
 
+const STICKY_MIN_WIDTH = 260;
+const STICKY_MIN_HEIGHT = 220;
+const STICKY_DEFAULT_SIZE = { w: 334, h: 312 };
+const STICKY_HISTORY_SIZE = { w: 360, h: 620 };
+
 function getViewportSize() {
   if (typeof window === "undefined") {
     return { width: 1280, height: 720 };
@@ -31,11 +36,34 @@ function clampStickyPosition(position, size) {
   };
 }
 
+function clampStickySize(size) {
+  const viewport = getViewportSize();
+  return {
+    w: Math.min(
+      Math.max(STICKY_MIN_WIDTH, size.w),
+      Math.max(STICKY_MIN_WIDTH, viewport.width - 24),
+    ),
+    h: Math.min(
+      Math.max(STICKY_MIN_HEIGHT, size.h),
+      Math.max(STICKY_MIN_HEIGHT, viewport.height - 68),
+    ),
+  };
+}
+
+function getStickyHistoryPosition() {
+  const viewport = getViewportSize();
+  return {
+    x: Math.max(12, viewport.width - STICKY_HISTORY_SIZE.w - 18),
+    y: 28,
+  };
+}
+
 export function createStickyNote(id) {
   return {
     id,
     title: `Sticky Note ${id + 1}`,
     content: "",
+    closed: false,
     minimized: false,
     maximized: false,
     updatedAt: new Date().toLocaleDateString([], {
@@ -43,6 +71,7 @@ export function createStickyNote(id) {
       day: "numeric",
     }),
     position: getStickyPosition(id),
+    size: STICKY_DEFAULT_SIZE,
   };
 }
 
@@ -144,7 +173,9 @@ export function StickyNotesTaskbarTabs({
   onRestore,
   onMinimize,
 }) {
-  return stickyNotes.map((note) => (
+  return stickyNotes
+    .filter((note) => !note.closed)
+    .map((note) => (
     <button
       key={`sticky-${note.id}`}
       className={`wd-tab-btn${note.minimized ? " minimized" : ""}`}
@@ -174,7 +205,7 @@ export function StickyNotesTaskbarTabs({
       </svg>
       {note.title}
     </button>
-  ));
+    ));
 }
 
 export default function StickyNotesLayer({
@@ -185,15 +216,21 @@ export default function StickyNotesLayer({
 }) {
   const [showStickyHistory, setShowStickyHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [stickyHistoryPosition, setStickyHistoryPosition] = useState(() =>
+    getStickyHistoryPosition(),
+  );
   const stickyDragging = useRef(false);
   const stickyDragOffset = useRef({ x: 0, y: 0 });
+  const stickyHistoryDragging = useRef(false);
+  const stickyHistoryDragOffset = useRef({ x: 0, y: 0 });
+  const stickyResizing = useRef(null);
   const stickyEditorRefs = useRef({});
   const searchInputRef = useRef(null);
 
   useEffect(() => {
     const activeNote = stickyNotes.find((note) => note.id === activeStickyId);
     const editor = stickyEditorRefs.current[activeStickyId];
-    if (!activeNote || activeNote.minimized || !editor) return;
+    if (!activeNote || activeNote.minimized || activeNote.closed || !editor) return;
 
     if (editor.innerHTML !== (activeNote.content || "")) {
       editor.innerHTML = activeNote.content || "";
@@ -202,28 +239,112 @@ export default function StickyNotesLayer({
 
   useEffect(() => {
     const onMove = (event) => {
-      if (!stickyDragging.current) return;
+      if (stickyDragging.current) {
+        setStickyNotes((notes) =>
+          notes.map((note) => {
+            if (note.id !== activeStickyId || note.maximized) return note;
 
-      setStickyNotes((notes) =>
-        notes.map((note) => {
-          if (note.id !== activeStickyId || note.maximized) return note;
+            return {
+              ...note,
+              position: clampStickyPosition(
+                {
+                  x: event.clientX - stickyDragOffset.current.x,
+                  y: event.clientY - stickyDragOffset.current.y,
+                },
+                note.size || STICKY_DEFAULT_SIZE,
+              ),
+            };
+          }),
+        );
+      }
 
-          return {
-            ...note,
-            position: clampStickyPosition(
-              {
-                x: event.clientX - stickyDragOffset.current.x,
-                y: event.clientY - stickyDragOffset.current.y,
-              },
-              { w: 334, h: 312 },
-            ),
-          };
-        }),
-      );
+      if (stickyHistoryDragging.current) {
+        setStickyHistoryPosition(
+          clampStickyPosition(
+            {
+              x: event.clientX - stickyHistoryDragOffset.current.x,
+              y: event.clientY - stickyHistoryDragOffset.current.y,
+            },
+            STICKY_HISTORY_SIZE,
+          ),
+        );
+      }
+
+      if (stickyResizing.current) {
+        const { id, direction, startPointer, startPosition, startSize } =
+          stickyResizing.current;
+        const deltaX = event.clientX - startPointer.x;
+        const deltaY = event.clientY - startPointer.y;
+
+        setStickyNotes((notes) =>
+          notes.map((note) => {
+            if (note.id !== id || note.maximized) return note;
+
+            let nextPosition = { ...startPosition };
+            let nextSize = { ...startSize };
+
+            if (direction.includes("right")) {
+              nextSize.w = startSize.w + deltaX;
+            }
+            if (direction.includes("bottom")) {
+              nextSize.h = startSize.h + deltaY;
+            }
+            if (direction.includes("left")) {
+              nextSize.w = startSize.w - deltaX;
+              nextPosition.x = startPosition.x + deltaX;
+            }
+            if (direction.includes("top")) {
+              nextSize.h = startSize.h - deltaY;
+              nextPosition.y = startPosition.y + deltaY;
+            }
+
+            const viewport = getViewportSize();
+            const maxRight = viewport.width - 12;
+            const maxBottom = viewport.height - 56;
+
+            if (direction.includes("left")) {
+              const proposedRight = startPosition.x + startSize.w;
+              nextPosition.x = Math.min(
+                Math.max(12, nextPosition.x),
+                proposedRight - STICKY_MIN_WIDTH,
+              );
+              nextSize.w = proposedRight - nextPosition.x;
+            }
+
+            if (direction.includes("top")) {
+              const proposedBottom = startPosition.y + startSize.h;
+              nextPosition.y = Math.min(
+                Math.max(12, nextPosition.y),
+                proposedBottom - STICKY_MIN_HEIGHT,
+              );
+              nextSize.h = proposedBottom - nextPosition.y;
+            }
+
+            if (direction.includes("right")) {
+              nextSize.w = Math.min(nextSize.w, maxRight - startPosition.x);
+            }
+
+            if (direction.includes("bottom")) {
+              nextSize.h = Math.min(nextSize.h, maxBottom - startPosition.y);
+            }
+
+            nextSize = clampStickySize(nextSize);
+            nextPosition = clampStickyPosition(nextPosition, nextSize);
+
+            return {
+              ...note,
+              position: nextPosition,
+              size: nextSize,
+            };
+          }),
+        );
+      }
     };
 
     const onUp = () => {
       stickyDragging.current = false;
+      stickyHistoryDragging.current = false;
+      stickyResizing.current = null;
     };
 
     window.addEventListener("mousemove", onMove);
@@ -242,7 +363,7 @@ export default function StickyNotesLayer({
   };
 
   const focusSticky = (id) => {
-    updateSticky(id, { minimized: false });
+    updateSticky(id, { minimized: false, closed: false });
     setActiveStickyId(id);
   };
 
@@ -255,26 +376,30 @@ export default function StickyNotesLayer({
   };
 
   const minimizeSticky = (id) => {
-    updateSticky(id, { minimized: true, maximized: false });
+    updateSticky(id, { minimized: true, maximized: false, closed: false });
     setShowStickyHistory(false);
   };
 
   const restoreSticky = (id) => {
-    updateSticky(id, { minimized: false });
+    updateSticky(id, { minimized: false, maximized: false, closed: false });
     setActiveStickyId(id);
     setShowStickyHistory(false);
   };
 
   const closeSticky = (id) => {
-    setStickyNotes((notes) => notes.filter((note) => note.id !== id));
-    setShowStickyHistory(false);
+    updateSticky(id, { closed: true, minimized: false, maximized: false });
   };
 
   const toggleStickyMaximize = (id) => {
     setStickyNotes((notes) =>
       notes.map((note) =>
         note.id === id
-          ? { ...note, minimized: false, maximized: !note.maximized }
+          ? {
+              ...note,
+              closed: false,
+              minimized: false,
+              maximized: !note.maximized,
+            }
           : note,
       ),
     );
@@ -312,6 +437,20 @@ export default function StickyNotesLayer({
     focusSticky(note.id);
   };
 
+  const startStickyResize = (event, note, direction) => {
+    if (!note || note.maximized) return;
+    event.preventDefault();
+    event.stopPropagation();
+    stickyResizing.current = {
+      id: note.id,
+      direction,
+      startPointer: { x: event.clientX, y: event.clientY },
+      startPosition: { ...note.position },
+      startSize: { ...(note.size || STICKY_DEFAULT_SIZE) },
+    };
+    focusSticky(note.id);
+  };
+
   const filteredStickyNotes = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     if (!query) {
@@ -326,20 +465,36 @@ export default function StickyNotesLayer({
       .sort((a, b) => b.id - a.id);
   }, [searchTerm, stickyNotes]);
 
+  const onStickyHistoryMouseDown = (event) => {
+    event.preventDefault();
+    stickyHistoryDragging.current = true;
+    stickyHistoryDragOffset.current = {
+      x: event.clientX - stickyHistoryPosition.x,
+      y: event.clientY - stickyHistoryPosition.y,
+    };
+  };
+
   return (
     <div className="wd-sticky-layer" onClick={(e) => e.stopPropagation()}>
       {stickyNotes
-        .filter((note) => !note.minimized)
+        .filter((note) => !note.minimized && !note.closed)
         .map((note) => (
           <div
             key={note.id}
             className={`wd-sticky-card${note.maximized ? " maximized" : ""}`}
             style={
               note.maximized
-                ? { right: 18, top: 26 }
+                ? {
+                    right: 18,
+                    top: 26,
+                    zIndex: note.id === activeStickyId ? stickyNotes.length + 2 : 1,
+                  }
                 : {
                     left: note.position.x,
                     top: note.position.y,
+                    width: note.size?.w ?? STICKY_DEFAULT_SIZE.w,
+                    height: note.size?.h ?? STICKY_DEFAULT_SIZE.h,
+                    zIndex: note.id === activeStickyId ? stickyNotes.length + 2 : 1,
                   }
             }
             onMouseDown={() => setActiveStickyId(note.id)}>
@@ -431,15 +586,51 @@ export default function StickyNotesLayer({
                 </button>
               ))}
             </div>
+
+            {!note.maximized &&
+              note.id === activeStickyId &&
+              ["top", "right", "bottom", "left"].map((direction) => (
+                <button
+                  key={direction}
+                  type="button"
+                  className={`wd-sticky-resize-handle ${direction}`}
+                  onMouseDown={(event) => startStickyResize(event, note, direction)}
+                  aria-label={`Resize sticky note from ${direction} edge`}
+                  tabIndex={-1}
+                />
+              ))}
+
+            {!note.maximized &&
+              note.id === activeStickyId &&
+              ["top-left", "top-right", "bottom-right", "bottom-left"].map(
+                (direction) => (
+                  <button
+                    key={direction}
+                    type="button"
+                    className={`wd-sticky-resize-handle corner ${direction}`}
+                    onMouseDown={(event) => startStickyResize(event, note, direction)}
+                    aria-label={`Resize sticky note from ${direction} corner`}
+                    tabIndex={-1}
+                  />
+                ),
+              )}
           </div>
         ))}
 
       {showStickyHistory && (
-        <div className="wd-sticky-history">
-          <div className="wd-sticky-history-head">
+        <div
+          className="wd-sticky-history"
+          style={{
+            left: stickyHistoryPosition.x,
+            top: stickyHistoryPosition.y,
+          }}>
+          <div
+            className="wd-sticky-history-head"
+            onMouseDown={onStickyHistoryMouseDown}>
             <div className="wd-sticky-history-title">Sticky Notes</div>
             <button
               className="wd-sticky-history-close"
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={() => setShowStickyHistory(false)}
               title="Close history">
               <StickyControlIcon type="close" />

@@ -106,10 +106,80 @@
   display: block;
 }
 
+.wd-sticky-resize-handle {
+  position: absolute;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.wd-sticky-resize-handle.top,
+.wd-sticky-resize-handle.bottom {
+  left: 12px;
+  right: 12px;
+  height: 10px;
+}
+
+.wd-sticky-resize-handle.left,
+.wd-sticky-resize-handle.right {
+  top: 12px;
+  bottom: 12px;
+  width: 10px;
+}
+
+.wd-sticky-resize-handle.top {
+  top: -5px;
+  cursor: ns-resize;
+}
+
+.wd-sticky-resize-handle.right {
+  right: -5px;
+  cursor: ew-resize;
+}
+
+.wd-sticky-resize-handle.bottom {
+  bottom: -5px;
+  cursor: ns-resize;
+}
+
+.wd-sticky-resize-handle.left {
+  left: -5px;
+  cursor: ew-resize;
+}
+
+.wd-sticky-resize-handle.corner {
+  width: 14px;
+  height: 14px;
+}
+
+.wd-sticky-resize-handle.top-left {
+  top: -6px;
+  left: -6px;
+  cursor: nwse-resize;
+}
+
+.wd-sticky-resize-handle.top-right {
+  top: -6px;
+  right: -6px;
+  cursor: nesw-resize;
+}
+
+.wd-sticky-resize-handle.bottom-right {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+
+.wd-sticky-resize-handle.bottom-left {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+
 .wd-sticky-history {
   position: absolute;
-  top: 28px;
-  right: 18px;
   width: min(360px, calc(100vw - 24px));
   max-height: min(72vh, 620px);
   border-radius: 12px;
@@ -125,6 +195,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  cursor: move;
 }
 
 .wd-sticky-history-title {
