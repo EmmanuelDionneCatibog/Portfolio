@@ -5,6 +5,9 @@ const STICKY_MIN_WIDTH = 260;
 const STICKY_MIN_HEIGHT = 220;
 const STICKY_DEFAULT_SIZE = { w: 334, h: 312 };
 const STICKY_HISTORY_SIZE = { w: 360, h: 620 };
+const STICKY_HISTORY_MIN_HEIGHT = 260;
+const STICKY_HISTORY_ROW_HEIGHT = 92;
+const STICKY_HISTORY_CHROME_HEIGHT = 108;
 
 function getViewportSize() {
   if (typeof window === "undefined") {
@@ -50,11 +53,26 @@ function clampStickySize(size) {
   };
 }
 
-function getStickyHistoryPosition() {
+function getStickyHistoryPosition(noteCount = 1) {
   const viewport = getViewportSize();
+  const historySize = getStickyHistorySize(noteCount, viewport);
   return {
-    x: Math.max(12, viewport.width - STICKY_HISTORY_SIZE.w - 18),
+    x: Math.max(12, viewport.width - historySize.w - 18),
     y: 28,
+  };
+}
+
+function getStickyHistorySize(noteCount = 1, viewport = getViewportSize()) {
+  const desiredHeight = Math.min(
+    STICKY_HISTORY_SIZE.h,
+    STICKY_HISTORY_CHROME_HEIGHT + Math.max(1, noteCount) * STICKY_HISTORY_ROW_HEIGHT,
+  );
+  return {
+    w: Math.min(STICKY_HISTORY_SIZE.w, Math.max(280, viewport.width - 24)),
+    h: Math.min(
+      desiredHeight,
+      Math.max(STICKY_HISTORY_MIN_HEIGHT, viewport.height - 84),
+    ),
   };
 }
 
@@ -173,39 +191,19 @@ export function StickyNotesTaskbarTabs({
   onRestore,
   onMinimize,
 }) {
-  return stickyNotes
-    .filter((note) => !note.closed)
-    .map((note) => (
-    <button
-      key={`sticky-${note.id}`}
-      className={`wd-tab-btn${note.minimized ? " minimized" : ""}`}
-      onClick={() =>
-        note.minimized || note.id !== activeStickyId
-          ? onRestore(note.id)
-          : onMinimize(note.id)
-      }>
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 10 10"
-        fill="none"
-        style={{ flexShrink: 0 }}>
-        <path
-          d="M1 1H9V9H1V1Z"
-          fill="#dff0b8"
-          stroke="#8fa15e"
-          strokeWidth="0.8"
-        />
-        <path
-          d="M2.2 3H7.8"
-          stroke="#7a845b"
-          strokeWidth="0.8"
-          strokeLinecap="round"
-        />
-      </svg>
-      {note.title}
-    </button>
-    ));
+  return stickyNotes.filter((note) => !note.closed).map((note) => ({
+    id: `sticky-${note.id}`,
+    type: "sticky",
+    title: note.title,
+    previewText: plainTextFromHtml(note.content) || "Empty note",
+    updatedAt: note.updatedAt,
+    minimized: note.minimized,
+    active: note.id === activeStickyId,
+    onClick: () =>
+      note.minimized || note.id !== activeStickyId
+        ? onRestore(note.id)
+        : onMinimize(note.id),
+  }));
 }
 
 export default function StickyNotesLayer({
@@ -217,7 +215,7 @@ export default function StickyNotesLayer({
   const [showStickyHistory, setShowStickyHistory] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [stickyHistoryPosition, setStickyHistoryPosition] = useState(() =>
-    getStickyHistoryPosition(),
+    getStickyHistoryPosition(stickyNotes.length),
   );
   const stickyDragging = useRef(false);
   const stickyDragOffset = useRef({ x: 0, y: 0 });
@@ -226,6 +224,7 @@ export default function StickyNotesLayer({
   const stickyResizing = useRef(null);
   const stickyEditorRefs = useRef({});
   const searchInputRef = useRef(null);
+  const historySize = getStickyHistorySize(stickyNotes.length);
 
   useEffect(() => {
     const activeNote = stickyNotes.find((note) => note.id === activeStickyId);
@@ -259,13 +258,14 @@ export default function StickyNotesLayer({
       }
 
       if (stickyHistoryDragging.current) {
+        const nextHistorySize = getStickyHistorySize(stickyNotes.length);
         setStickyHistoryPosition(
           clampStickyPosition(
             {
               x: event.clientX - stickyHistoryDragOffset.current.x,
               y: event.clientY - stickyHistoryDragOffset.current.y,
             },
-            STICKY_HISTORY_SIZE,
+            nextHistorySize,
           ),
         );
       }
@@ -354,7 +354,26 @@ export default function StickyNotesLayer({
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
-  }, [activeStickyId, setStickyNotes]);
+  }, [activeStickyId, setStickyNotes, stickyNotes.length]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const nextHistorySize = getStickyHistorySize(stickyNotes.length);
+      setStickyHistoryPosition((current) =>
+        clampStickyPosition(current, nextHistorySize),
+      );
+    };
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [stickyNotes.length]);
+
+  useEffect(() => {
+    const nextHistorySize = getStickyHistorySize(stickyNotes.length);
+    setStickyHistoryPosition((current) =>
+      clampStickyPosition(current, nextHistorySize),
+    );
+  }, [stickyNotes.length]);
 
   const updateSticky = (id, updates) => {
     setStickyNotes((notes) =>
@@ -404,6 +423,11 @@ export default function StickyNotesLayer({
       ),
     );
     setActiveStickyId(id);
+  };
+
+  const openStickyHistory = (id) => {
+    setActiveStickyId(id);
+    setShowStickyHistory(true);
   };
 
   const handleStickyInput = (id, html) => {
@@ -485,8 +509,10 @@ export default function StickyNotesLayer({
             style={
               note.maximized
                 ? {
+                    left: 18,
                     right: 18,
-                    top: 26,
+                    top: 18,
+                    bottom: 54,
                     zIndex: note.id === activeStickyId ? stickyNotes.length + 2 : 1,
                   }
                 : {
@@ -529,10 +555,7 @@ export default function StickyNotesLayer({
                 <button
                   className="wd-sticky-icon-btn"
                   onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => {
-                    setActiveStickyId(note.id);
-                    setShowStickyHistory((value) => !value);
-                  }}
+                  onClick={() => openStickyHistory(note.id)}
                   title="Sticky note history">
                   <StickyControlIcon type="more" />
                 </button>
@@ -623,6 +646,9 @@ export default function StickyNotesLayer({
           style={{
             left: stickyHistoryPosition.x,
             top: stickyHistoryPosition.y,
+            width: historySize.w,
+            height: historySize.h,
+            zIndex: stickyNotes.length + 12,
           }}>
           <div
             className="wd-sticky-history-head"

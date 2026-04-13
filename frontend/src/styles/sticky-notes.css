@@ -22,8 +22,9 @@
 }
 
 .wd-sticky-card.maximized {
-  width: min(420px, calc(100vw - 24px));
-  min-height: min(78vh, 560px);
+  width: auto;
+  min-height: 0;
+  height: auto;
 }
 
 .wd-sticky-topbar {
@@ -181,13 +182,14 @@
 .wd-sticky-history {
   position: absolute;
   width: min(360px, calc(100vw - 24px));
-  max-height: min(72vh, 620px);
   border-radius: 12px;
   background: rgba(250,248,247,0.98);
   color: #212121;
   box-shadow: 0 26px 48px rgba(0,0,0,0.3);
   overflow: hidden;
   pointer-events: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .wd-sticky-history-head {
@@ -263,7 +265,7 @@
 .wd-sticky-history-list {
   padding: 0 18px 18px;
   overflow-y: auto;
-  max-height: calc(min(72vh, 620px) - 90px);
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 12px;

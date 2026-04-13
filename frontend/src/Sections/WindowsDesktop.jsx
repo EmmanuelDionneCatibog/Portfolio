@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import FolderIcon from "../Components/FolderIcon";
 import FolderWindow, { VideoPlayerWindow } from "../Components/FolderWindow";
 import StickyNotesLayer, {
@@ -56,11 +56,166 @@ function TrayWifiIcon() {
   );
 }
 
+function FolderTaskIcon() {
+  return (
+    <svg width="10" height="9" viewBox="0 0 52 44" fill="none" style={{ flexShrink: 0 }}>
+      <path
+        d="M2 8C2 5.79 3.79 4 6 4H20L24 10H46C48.21 10 50 11.79 50 14V38C50 40.21 48.21 42 46 42H6C3.79 42 2 40.21 2 38V8Z"
+        fill="#db9834"
+      />
+      <path
+        d="M2 14H50V38C50 40.21 48.21 42 46 42H6C3.79 42 2 40.21 2 38V14Z"
+        fill="#d7c6ac"
+        opacity="0.8"
+      />
+    </svg>
+  );
+}
+
+function VideoTaskIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+      <rect x="1.2" y="2" width="11.6" height="10" rx="1.4" fill="#db9834" />
+      <polygon points="5.5,4.7 9.2,7 5.5,9.3" fill="#25263a" />
+    </svg>
+  );
+}
+
+function StickyTaskIcon({ stacked = false }) {
+  return (
+    <svg
+      width={stacked ? "13" : "10"}
+      height={stacked ? "12" : "10"}
+      viewBox={stacked ? "0 0 13 12" : "0 0 10 10"}
+      fill="none"
+      style={{ flexShrink: 0 }}>
+      {stacked && (
+        <>
+          <path
+            d="M3 1.4H11V9.4H3V1.4Z"
+            fill="#f2e9a7"
+            stroke="#a79644"
+            strokeWidth="0.8"
+          />
+          <path
+            d="M1 2.6H9V10.6H1V2.6Z"
+            fill="#dff0b8"
+            stroke="#8fa15e"
+            strokeWidth="0.8"
+          />
+          <path
+            d="M2.2 4.7H7.8"
+            stroke="#7a845b"
+            strokeWidth="0.8"
+            strokeLinecap="round"
+          />
+        </>
+      )}
+      {!stacked && (
+        <>
+          <path d="M1 1H9V9H1V1Z" fill="#dff0b8" stroke="#8fa15e" strokeWidth="0.8" />
+          <path d="M2.2 3H7.8" stroke="#7a845b" strokeWidth="0.8" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  );
+}
+
+function TaskbarItemIcon({ type, stacked = false }) {
+  if (type === "video") return <VideoTaskIcon />;
+  if (type === "sticky") return <StickyTaskIcon stacked={stacked} />;
+  return <FolderTaskIcon />;
+}
+
+function getTaskbarGroupLabel(type, count) {
+  if (type === "video") return count > 1 ? `Videos (${count})` : "Video";
+  if (type === "sticky") return count > 1 ? "Sticky Notes" : "Sticky Note";
+  return count > 1 ? "Folders" : "Folder";
+}
+
+function StickyPreviewCard({ item, onClick }) {
+  return (
+    <button
+      className={`wd-sticky-preview-card${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
+      onClick={onClick}
+      title={item.title}>
+      <div className="wd-sticky-preview-card-head">{item.title}</div>
+      <div className="wd-sticky-preview-paper">
+        <div className="wd-sticky-preview-paper-line short" />
+        <div className="wd-sticky-preview-paper-line" />
+        <div className="wd-sticky-preview-paper-line mid" />
+        <div className="wd-sticky-preview-paper-content">{item.previewText}</div>
+      </div>
+    </button>
+  );
+}
+
+function TaskbarGroupedButton({
+  group,
+  hoveredGroupKey,
+  setHoveredGroupKey,
+}) {
+  const isHovered = hoveredGroupKey === group.key;
+  const isGrouped = group.items.length > 1;
+  const buttonClassName = `wd-tab-btn${group.allMinimized ? " minimized" : ""}${group.hasActive ? " active" : ""}`;
+
+  return (
+    <div
+      className="wd-taskbar-group"
+      onMouseEnter={() => isGrouped && setHoveredGroupKey(group.key)}
+      onMouseLeave={() => isGrouped && setHoveredGroupKey(null)}>
+      <button
+        className={buttonClassName}
+        onClick={group.onPrimaryClick}
+        title={group.items.map((item) => item.title).join(" | ")}>
+        <TaskbarItemIcon type={group.type} stacked={group.type === "sticky" && isGrouped} />
+        {isGrouped ? getTaskbarGroupLabel(group.type, group.items.length) : group.items[0].title}
+      </button>
+
+      {isGrouped && isHovered && (
+        <div
+          className={`wd-taskbar-preview${group.type === "sticky" ? " sticky-group" : ""}`}
+          onClick={(event) => event.stopPropagation()}>
+          {group.type === "sticky" ? (
+            <div className="wd-sticky-preview-grid">
+              {group.items.map((item) => (
+                <StickyPreviewCard
+                  key={item.id}
+                  item={item}
+                  onClick={() => {
+                    item.onClick();
+                    setHoveredGroupKey(null);
+                  }}
+                />
+              ))}
+            </div>
+          ) : (
+            group.items.map((item) => (
+              <button
+                key={item.id}
+                className={`wd-taskbar-preview-item${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
+                onClick={() => {
+                  item.onClick();
+                  setHoveredGroupKey(null);
+                }}
+                title={item.title}>
+                <TaskbarItemIcon type={item.type} />
+                <span className="wd-taskbar-preview-title">{item.title}</span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function WindowsDesktop({ visible, onShutdown }) {
   const [windows, setWindows] = useState([]);
   const [zOrders, setZOrders] = useState([]);
   const [time, setTime] = useState("");
   const [startOpen, setStartOpen] = useState(false);
+  const [hoveredGroupKey, setHoveredGroupKey] = useState(null);
   const [stickyNotes, setStickyNotes] = useState(() => [createStickyNote(0)]);
   const [activeStickyId, setActiveStickyId] = useState(0);
   const nextId = useRef(0);
@@ -132,6 +287,65 @@ export default function WindowsDesktop({ visible, onShutdown }) {
   };
 
   const getZ = (id) => 10 + zOrders.indexOf(id);
+  const restoreStickyNote = (id) => {
+    setStickyNotes((notes) =>
+      notes.map((note) =>
+        note.id === id ? { ...note, minimized: false, closed: false } : note,
+      ),
+    );
+    setActiveStickyId(id);
+  };
+
+  const minimizeStickyNote = (id) => {
+    setStickyNotes((notes) =>
+      notes.map((note) =>
+        note.id === id ? { ...note, minimized: true, maximized: false } : note,
+      ),
+    );
+  };
+
+  const stickyTaskbarItems = StickyNotesTaskbarTabs({
+    stickyNotes,
+    activeStickyId,
+    onRestore: restoreStickyNote,
+    onMinimize: minimizeStickyNote,
+  });
+
+  const taskbarGroups = useMemo(() => {
+    const windowItems = windows.map((win) => ({
+      id: `window-${win.id}`,
+      type: win.type,
+      title: win.type === "video" ? win.title : PROJECTS[win.projIdx].name,
+      minimized: win.minimized,
+      active: !win.minimized && zOrders[zOrders.length - 1] === win.id,
+      onClick: () => (win.minimized ? restoreWindow(win.id) : focusWindow(win.id)),
+    }));
+
+    const items = [...windowItems, ...stickyTaskbarItems];
+    const grouped = items.reduce((map, item) => {
+      if (!map.has(item.type)) {
+        map.set(item.type, []);
+      }
+      map.get(item.type).push(item);
+      return map;
+    }, new Map());
+
+    return Array.from(grouped.entries()).map(([type, groupItems]) => {
+      const primaryItem =
+        groupItems.find((item) => item.active) ||
+        groupItems.find((item) => !item.minimized) ||
+        groupItems[groupItems.length - 1];
+
+      return {
+        key: type,
+        type,
+        items: groupItems,
+        allMinimized: groupItems.every((item) => item.minimized),
+        hasActive: groupItems.some((item) => item.active),
+        onPrimaryClick: primaryItem.onClick,
+      };
+    });
+  }, [activeStickyId, stickyTaskbarItems, windows, zOrders]);
 
   return (
     <>
@@ -241,6 +455,142 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         .wd-tab-btn.minimized {
           background: rgba(219,152,52,0.08);
         }
+        .wd-tab-btn.active {
+          background: rgba(219,152,52,0.28);
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        }
+        .wd-tab-count {
+          min-width: 16px;
+          height: 16px;
+          border-radius: 999px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 4px;
+          background: rgba(255,255,255,0.12);
+          color: #f5e9d7;
+          font-size: 10px;
+          line-height: 1;
+        }
+        .wd-taskbar-group {
+          position: relative;
+          display: flex;
+          flex-shrink: 0;
+        }
+        .wd-taskbar-preview {
+          position: absolute;
+          left: 0;
+          bottom: calc(100% + 8px);
+          min-width: 220px;
+          max-width: min(320px, calc(100vw - 24px));
+          padding: 8px;
+          border-radius: 10px;
+          background: rgba(17,20,30,0.97);
+          border: 1px solid rgba(219,152,52,0.22);
+          box-shadow: 0 18px 36px rgba(0,0,0,0.42);
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          z-index: 320;
+        }
+        .wd-taskbar-preview.sticky-group {
+          min-width: 268px;
+          max-width: min(368px, calc(100vw - 24px));
+          padding: 10px;
+        }
+        .wd-taskbar-preview-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          min-width: 0;
+          padding: 8px 10px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.04);
+          color: #d7c6ac;
+          cursor: pointer;
+          text-align: left;
+        }
+        .wd-taskbar-preview-item:hover,
+        .wd-taskbar-preview-item.active {
+          background: rgba(219,152,52,0.16);
+          border-color: rgba(219,152,52,0.2);
+        }
+        .wd-taskbar-preview-item.minimized {
+          opacity: 0.72;
+        }
+        .wd-taskbar-preview-title {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .wd-sticky-preview-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 10px;
+        }
+        .wd-sticky-preview-card {
+          min-width: 0;
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 10px;
+          background: rgba(255,255,255,0.04);
+          color: #f4ebd7;
+          padding: 10px;
+          cursor: pointer;
+          text-align: left;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .wd-sticky-preview-card:hover,
+        .wd-sticky-preview-card.active {
+          background: rgba(219,152,52,0.16);
+          border-color: rgba(219,152,52,0.24);
+        }
+        .wd-sticky-preview-card.minimized {
+          opacity: 0.74;
+        }
+        .wd-sticky-preview-card-head {
+          font-size: 11px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .wd-sticky-preview-paper {
+          height: 138px;
+          border-radius: 2px;
+          background: linear-gradient(180deg, #fff6cc 0%, #f8efb2 100%);
+          border: 1px solid rgba(143,126,67,0.24);
+          padding: 10px 10px 12px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.65);
+          overflow: hidden;
+          color: #685f34;
+        }
+        .wd-sticky-preview-paper-line {
+          height: 3px;
+          border-radius: 999px;
+          background: rgba(113,105,64,0.16);
+          margin-bottom: 8px;
+          width: 100%;
+        }
+        .wd-sticky-preview-paper-line.short {
+          width: 62%;
+        }
+        .wd-sticky-preview-paper-line.mid {
+          width: 78%;
+        }
+        .wd-sticky-preview-paper-content {
+          margin-top: 12px;
+          font-size: 10px;
+          line-height: 1.4;
+          display: -webkit-box;
+          -webkit-line-clamp: 6;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          white-space: normal;
+          word-break: break-word;
+        }
         .wd-tray {
           display: flex;
           align-items: center;
@@ -336,6 +686,9 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           .wd-tab-btn {
             max-width: 100%;
           }
+          .wd-sticky-preview-grid {
+            grid-template-columns: 1fr;
+          }
           .wd-tray {
             gap: 6px;
           }
@@ -387,13 +740,16 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         }
       `}</style>
 
-      <div
-        className="wd-root"
-        style={{
+        <div
+          className="wd-root"
+          style={{
           opacity: visible ? 1 : 0,
           pointerEvents: visible ? "auto" : "none",
         }}
-        onClick={() => setStartOpen(false)}>
+        onClick={() => {
+          setStartOpen(false);
+          setHoveredGroupKey(null);
+        }}>
         <div
           style={{
             position: "absolute",
@@ -473,54 +829,14 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           </button>
 
           <div className="wd-tab-list">
-            {windows.map((win) => (
-              <button
-                key={win.id}
-                className={`wd-tab-btn${win.minimized ? " minimized" : ""}`}
-                onClick={() =>
-                  win.minimized ? restoreWindow(win.id) : focusWindow(win.id)
-                }>
-                <svg
-                  width="10"
-                  height="9"
-                  viewBox="0 0 52 44"
-                  fill="none"
-                  style={{ flexShrink: 0 }}>
-                  <path
-                    d="M2 8C2 5.79 3.79 4 6 4H20L24 10H46C48.21 10 50 11.79 50 14V38C50 40.21 48.21 42 46 42H6C3.79 42 2 40.21 2 38V8Z"
-                    fill="#db9834"
-                  />
-                  <path
-                    d="M2 14H50V38C50 40.21 48.21 42 46 42H6C3.79 42 2 40.21 2 38V14Z"
-                    fill="#d7c6ac"
-                    opacity="0.8"
-                  />
-                </svg>
-                {win.type === "video" ? win.title : PROJECTS[win.projIdx].name}
-              </button>
+            {taskbarGroups.map((group) => (
+              <TaskbarGroupedButton
+                key={group.key}
+                group={group}
+                hoveredGroupKey={hoveredGroupKey}
+                setHoveredGroupKey={setHoveredGroupKey}
+              />
             ))}
-
-            <StickyNotesTaskbarTabs
-              stickyNotes={stickyNotes}
-              activeStickyId={activeStickyId}
-              onRestore={(id) => {
-                setStickyNotes((notes) =>
-                  notes.map((note) =>
-                    note.id === id ? { ...note, minimized: false } : note,
-                  ),
-                );
-                setActiveStickyId(id);
-              }}
-              onMinimize={(id) => {
-                setStickyNotes((notes) =>
-                  notes.map((note) =>
-                    note.id === id
-                      ? { ...note, minimized: true, maximized: false }
-                      : note,
-                  ),
-                );
-              }}
-            />
           </div>
 
           <div className="wd-tray">
