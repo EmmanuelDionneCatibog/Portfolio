@@ -13,13 +13,9 @@ export default function GlitchOverlay({ active, onDone }) {
 
     const w = canvas.width;
     const h = canvas.height;
-
-    // Capture the current screen content to distort
-    // We'll use pixel manipulation to simulate real screen corruption
     let frame = 0;
-    const totalFrames = 50; // longer = more dramatic
+    const totalFrames = 42;
 
-    // Pre-generate a noise texture to sample from
     const noiseCanvas = document.createElement("canvas");
     noiseCanvas.width = w;
     noiseCanvas.height = h;
@@ -34,93 +30,122 @@ export default function GlitchOverlay({ active, onDone }) {
     }
     nctx.putImageData(noiseData, 0, 0);
 
+    const drawBand = (x, y, bandWidth, bandHeight, shift, alpha = 1) => {
+      const drawX = x + shift;
+
+      ctx.fillStyle = `rgba(245,245,245,${0.18 * alpha})`;
+      ctx.fillRect(drawX, y, bandWidth, bandHeight);
+
+      ctx.fillStyle = `rgba(255,40,80,${0.22 * alpha})`;
+      ctx.fillRect(drawX - 10, y, bandWidth, Math.max(1, bandHeight - 1));
+
+      ctx.fillStyle = `rgba(60,255,190,${0.16 * alpha})`;
+      ctx.fillRect(drawX + 7, y + 1, bandWidth, Math.max(1, bandHeight - 1));
+
+      ctx.fillStyle = `rgba(70,120,255,${0.2 * alpha})`;
+      ctx.fillRect(drawX + 14, y + 2, bandWidth, Math.max(1, bandHeight - 2));
+    };
+
     const draw = () => {
       frame++;
-      const progress = frame / totalFrames; // 0→1
+      const progress = frame / totalFrames;
+      const fadeOut = progress > 0.72 ? (progress - 0.72) / 0.28 : 0;
+      const intensity = 1 - fadeOut * 0.7;
 
-      // Black base
-      ctx.fillStyle = "#000000";
+      ctx.fillStyle = "#060608";
       ctx.fillRect(0, 0, w, h);
 
-      // ── 1. SCANLINES — fine horizontal lines across full screen ──
-      const scanlineGap = 3;
-      ctx.fillStyle = "rgba(0,0,0,0.45)";
-      for (let y = 0; y < h; y += scanlineGap) {
+      const vignette = ctx.createRadialGradient(
+        w * 0.5,
+        h * 0.5,
+        Math.min(w, h) * 0.08,
+        w * 0.5,
+        h * 0.5,
+        Math.max(w, h) * 0.7,
+      );
+      vignette.addColorStop(0, "rgba(0,0,0,0)");
+      vignette.addColorStop(0.7, "rgba(0,0,0,0.2)");
+      vignette.addColorStop(1, "rgba(0,0,0,0.62)");
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, w, h);
+
+      for (let y = 0; y < h; y += 3) {
+        ctx.fillStyle = `rgba(255,255,255,${0.018 * intensity})`;
         ctx.fillRect(0, y, w, 1);
       }
 
-      // ── 2. HORIZONTAL BLOCK TEARS — large displaced rectangles ──
-      const tears = 6 + Math.floor(Math.random() * 8);
-      for (let i = 0; i < tears; i++) {
+      const darkBands = 7 + Math.floor(Math.random() * 8);
+      for (let i = 0; i < darkBands; i++) {
         const ty = Math.floor(Math.random() * h);
-        const th = 2 + Math.floor(Math.random() * 28);
-        const shift = (Math.random() - 0.5) * 180;
-        const bright = 30 + Math.floor(Math.random() * 60);
-        ctx.fillStyle = `rgb(${bright},${bright},${bright})`;
-        ctx.fillRect(shift, ty, w, th);
+        const th = 8 + Math.floor(Math.random() * 36);
+        ctx.fillStyle = `rgba(0,0,0,${(0.18 + Math.random() * 0.34) * intensity})`;
+        ctx.fillRect(0, ty, w, th);
       }
 
-      // ── 3. RGB CHANNEL SPLIT — draw same stripe offset in R, G, B ──
-      const rgbBands = 3 + Math.floor(Math.random() * 5);
-      for (let i = 0; i < rgbBands; i++) {
-        const by = Math.floor(Math.random() * h);
-        const bh = 1 + Math.floor(Math.random() * 8);
-        const shift = 8 + Math.random() * 20;
-        // Red channel — shifted left
-        ctx.fillStyle = `rgba(255,0,0,${0.4 + Math.random() * 0.4})`;
-        ctx.fillRect(-shift, by, w, bh);
-        // Green channel — centered
-        ctx.fillStyle = `rgba(0,255,0,${0.3 + Math.random() * 0.3})`;
-        ctx.fillRect(0, by + 1, w, bh);
-        // Blue channel — shifted right
-        ctx.fillStyle = `rgba(0,100,255,${0.4 + Math.random() * 0.4})`;
-        ctx.fillRect(shift, by + 2, w, bh);
+      const smearColumns = 4 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < smearColumns; i++) {
+        const columnX = Math.random() * w;
+        const columnWidth = 18 + Math.random() * 42;
+        const slices = 10 + Math.floor(Math.random() * 10);
+
+        for (let s = 0; s < slices; s++) {
+          const sliceY = Math.random() * h;
+          const sliceH = 3 + Math.random() * 14;
+          const sliceShift = (Math.random() - 0.5) * 55;
+
+          ctx.fillStyle = `rgba(255,255,255,${(0.08 + Math.random() * 0.1) * intensity})`;
+          ctx.fillRect(columnX + sliceShift, sliceY, columnWidth, sliceH);
+
+          ctx.fillStyle = `rgba(255,0,90,${(0.12 + Math.random() * 0.12) * intensity})`;
+          ctx.fillRect(columnX + sliceShift - 7, sliceY, columnWidth, sliceH);
+
+          ctx.fillStyle = `rgba(60,255,210,${(0.08 + Math.random() * 0.08) * intensity})`;
+          ctx.fillRect(columnX + sliceShift + 6, sliceY + 1, columnWidth, sliceH);
+        }
       }
 
-      // ── 4. PIXEL CORRUPTION BLOCKS — small random colored squares ──
-      const blocks = 20 + Math.floor(Math.random() * 30);
-      for (let i = 0; i < blocks; i++) {
-        const bx = Math.floor(Math.random() * w);
-        const by = Math.floor(Math.random() * h);
-        const bw = 2 + Math.floor(Math.random() * 12);
-        const bh2 = 2 + Math.floor(Math.random() * 6);
-        const r = Math.floor(Math.random() * 255);
-        const g = Math.floor(Math.random() * 255);
-        const b = Math.floor(Math.random() * 255);
-        ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
-        ctx.fillRect(bx, by, bw, bh2);
+      const tearBands = 22 + Math.floor(Math.random() * 18);
+      for (let i = 0; i < tearBands; i++) {
+        const ty = Math.floor(Math.random() * h);
+        const th = 1 + Math.floor(Math.random() * 7);
+        const segmentCount = 1 + Math.floor(Math.random() * 4);
+
+        for (let s = 0; s < segmentCount; s++) {
+          const segmentWidth = 24 + Math.random() * (w * 0.22);
+          const tx = Math.random() * (w - segmentWidth);
+          const shift = (Math.random() - 0.5) * (24 + Math.random() * 70);
+          const alpha = intensity * (0.55 + Math.random() * 0.7);
+          drawBand(tx, ty, segmentWidth, th, shift, alpha);
+        }
       }
 
-      // ── 5. VERTICAL SYNC LINES — thin vertical bars ──
-      const vbars = 2 + Math.floor(Math.random() * 4);
-      for (let i = 0; i < vbars; i++) {
-        const vx = Math.floor(Math.random() * w);
-        const vw = 1 + Math.floor(Math.random() * 3);
-        ctx.fillStyle = `rgba(255,255,255,${0.05 + Math.random() * 0.12})`;
-        ctx.fillRect(vx, 0, vw, h);
+      const specks = 18 + Math.floor(Math.random() * 18);
+      for (let i = 0; i < specks; i++) {
+        const bx = Math.random() * w;
+        const by = Math.random() * h;
+        const bw = 8 + Math.random() * 28;
+        const bh = 1 + Math.random() * 3;
+
+        ctx.fillStyle = `rgba(255,255,255,${(0.07 + Math.random() * 0.1) * intensity})`;
+        ctx.fillRect(bx, by, bw, bh);
       }
 
-      // ── 6. NOISE OVERLAY — subtle static grain ──
-      ctx.globalAlpha = 0.06 + Math.random() * 0.08;
+      ctx.globalAlpha = 0.04 + Math.random() * 0.06;
       ctx.drawImage(noiseCanvas, 0, 0);
       ctx.globalAlpha = 1;
 
-      // ── 7. FULL-SCREEN FLASH SPIKES — random bright frames ──
-      if (Math.random() < 0.12) {
-        ctx.fillStyle = `rgba(255,255,255,${0.08 + Math.random() * 0.18})`;
+      if (Math.random() < 0.18) {
+        ctx.fillStyle = `rgba(255,255,255,${(0.03 + Math.random() * 0.06) * intensity})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // ── 8. SCREEN OFF FLICKER — occasionally go near-black ──
-      if (Math.random() < 0.08) {
-        ctx.fillStyle = "rgba(0,0,0,0.85)";
+      if (Math.random() < 0.15) {
+        ctx.fillStyle = `rgba(0,0,0,${0.2 + Math.random() * 0.18})`;
         ctx.fillRect(0, 0, w, h);
       }
 
-      // ── 9. WHITEOUT AT END ──
       if (progress > 0.78) {
         const a = (progress - 0.78) / 0.22;
-        // Ease in — not linear, more dramatic
         const eased = a * a;
         ctx.fillStyle = `rgba(255,255,255,${eased})`;
         ctx.fillRect(0, 0, w, h);

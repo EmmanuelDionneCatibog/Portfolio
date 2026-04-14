@@ -132,18 +132,6 @@ export default function CertificateCarousel({ isOpen, onClose }) {
           {currentIndex + 1} / {certificates.length}
         </div>
 
-        <div className="cc-dots">
-          {certificates.map((_, i) => (
-            <div
-              key={i}
-              className={`cc-dot${i === currentIndex ? " active" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentIndex(i);
-              }}
-            />
-          ))}
-        </div>
       </div>
     </div>
   );
