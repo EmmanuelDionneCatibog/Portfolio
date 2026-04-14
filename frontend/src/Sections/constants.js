@@ -63,4 +63,19 @@ export const PROJECTS = [
     video: null,
     logo: null,
   },
+  {
+    name: "DICT-TMS",
+    url: null,
+    tag: "React / Tailwind CSS / PostgreSQL",
+    subject: "Web Development",
+    branch: "Information Systems",
+    date: "April 2026",
+    status: "Work in Progress",
+    shortDesc:
+      "DICT-TMS is a full-featured learning management system where users can enroll in and complete courses, while staff members have administrative privileges to upload, organize, and manage course content efficiently.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
+  },
 ];
