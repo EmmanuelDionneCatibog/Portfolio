@@ -72,6 +72,8 @@ export default function ProjectsPage() {
   const resetProgressRef = useRef(null);
   const zoomingOutRef = useRef(false);
   const targetProgressRef = useRef(0);
+  const scrollProgressRef = useRef(0);
+  const showDesktopRef = useRef(false);
 
   // Live camera-path refs — updated on resize so the animation loop always
   // reads the correct scaled values without restarting.
@@ -100,6 +102,8 @@ export default function ProjectsPage() {
 
   const handleBack = () => {
     isRestoringRef.current = true;
+    zoomingOutRef.current = false;
+    setGlitching(false);
     setShowDesktop(false);
     glitchFiredRef.current = false;
     if (resetProgressRef.current) resetProgressRef.current();
@@ -110,12 +114,14 @@ export default function ProjectsPage() {
 
   const handleShutdown = () => {
     setShowDesktop(false);
+    setGlitching(false);
     glitchFiredRef.current = false;
     isRestoringRef.current = true;
     zoomingOutRef.current = true;
   };
 
   useEffect(() => {
+    showDesktopRef.current = showDesktop;
     document.body.classList.toggle("desktop-open", showDesktop);
     return () => document.body.classList.remove("desktop-open");
   }, [showDesktop]);
@@ -267,6 +273,7 @@ export default function ProjectsPage() {
     resetProgressRef.current = () => {
       syncTargetRef(0);
       scrollProgress = 0;
+      scrollProgressRef.current = 0;
       glitchTriggered = false;
     };
 
@@ -312,7 +319,24 @@ export default function ProjectsPage() {
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
-      if (raycaster.intersectObjects(laptopMeshes).length > 0) syncTargetRef(1);
+      if (raycaster.intersectObjects(laptopMeshes).length > 0) {
+        const currentProgress = Math.max(
+          targetProgressRef.current,
+          scrollProgressRef.current,
+        );
+
+        if (
+          !showDesktopRef.current &&
+          !isRestoringRef.current &&
+          currentProgress >= 0.96
+        ) {
+          glitchTriggered = true;
+          glitchFiredRef.current = false;
+          triggerGlitch();
+        } else {
+          syncTargetRef(1);
+        }
+      }
       if (raycaster.intersectObjects(paperMeshes).length > 0)
         setShowCarousel(true);
     };
@@ -364,6 +388,7 @@ export default function ProjectsPage() {
       if (targetProgress <= 0 && scrollProgress < 0.01) {
         syncTargetRef(0);
         scrollProgress = 0;
+        scrollProgressRef.current = 0;
         glitchTriggered = false;
         zoomingOutRef.current = false;
         isRestoringRef.current = false;
@@ -423,6 +448,7 @@ export default function ProjectsPage() {
 
       checkZoomOut();
       scrollProgress += (targetProgress - scrollProgress) * 0.06;
+      scrollProgressRef.current = scrollProgress;
       applyProgress(scrollProgress);
 
       // Camera uses live refs — always correct after a resize

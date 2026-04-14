@@ -127,25 +127,66 @@ function TaskbarItemIcon({ type, stacked = false }) {
   return <FolderTaskIcon />;
 }
 
-function getTaskbarGroupLabel(type, count) {
-  if (type === "video") return count > 1 ? `Videos (${count})` : "Video";
-  if (type === "sticky") return count > 1 ? "Sticky Notes" : "Sticky Note";
-  return count > 1 ? "Folders" : "Folder";
-}
-
 function StickyPreviewCard({ item, onClick }) {
   return (
     <button
-      className={`wd-sticky-preview-card${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
+      className={`wd-window-preview-card sticky${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
       onClick={onClick}
       title={item.title}>
-      <div className="wd-sticky-preview-card-head">{item.title}</div>
-      <div className="wd-sticky-preview-paper">
-        <div className="wd-sticky-preview-paper-line short" />
-        <div className="wd-sticky-preview-paper-line" />
-        <div className="wd-sticky-preview-paper-line mid" />
-        <div className="wd-sticky-preview-paper-content">{item.previewText}</div>
+      <div className="wd-window-preview-card-head">{item.title}</div>
+      <div className="wd-window-preview-frame sticky">
+        <div className="wd-sticky-preview-paper">
+          <div className="wd-sticky-preview-paper-line short" />
+          <div className="wd-sticky-preview-paper-line" />
+          <div className="wd-sticky-preview-paper-line mid" />
+          <div className="wd-sticky-preview-paper-content">{item.previewText}</div>
+        </div>
       </div>
+    </button>
+  );
+}
+
+function TaskbarWindowPreviewCard({ item, onClick }) {
+  const renderPreview = () => {
+    if (item.type === "video") {
+      return (
+        <div className="wd-window-preview-screen video">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
+            <circle cx="13" cy="13" r="12" fill="rgba(0,0,0,0.28)" />
+            <polygon points="10,8 19,13 10,18" fill="#f4ebd7" />
+          </svg>
+        </div>
+      );
+    }
+
+    if (item.type === "folder") {
+      return item.previewImage ? (
+        <img
+          className="wd-window-preview-image"
+          src={item.previewImage}
+          alt={item.title}
+        />
+      ) : (
+        <div className="wd-window-preview-screen folder">
+          <TaskbarItemIcon type="folder" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="wd-window-preview-screen">
+        <TaskbarItemIcon type={item.type} />
+      </div>
+    );
+  };
+
+  return (
+    <button
+      className={`wd-window-preview-card${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
+      onClick={onClick}
+      title={item.title}>
+      <div className="wd-window-preview-card-head">{item.title}</div>
+      <div className="wd-window-preview-frame">{renderPreview()}</div>
     </button>
   );
 }
@@ -163,22 +204,24 @@ function TaskbarGroupedButton({
     <div
       className="wd-taskbar-group"
       onMouseEnter={() => isGrouped && setHoveredGroupKey(group.key)}
-      onMouseLeave={() => isGrouped && setHoveredGroupKey(null)}>
+      onMouseLeave={() => isGrouped && setHoveredGroupKey(null)}
+      onFocus={() => isGrouped && setHoveredGroupKey(group.key)}
+      onBlur={() => isGrouped && setHoveredGroupKey(null)}>
       <button
         className={buttonClassName}
         onClick={group.onPrimaryClick}
         title={group.items.map((item) => item.title).join(" | ")}>
         <TaskbarItemIcon type={group.type} stacked={group.type === "sticky" && isGrouped} />
-        {isGrouped ? getTaskbarGroupLabel(group.type, group.items.length) : group.items[0].title}
+        {isGrouped && <span className="wd-tab-count">{group.items.length}</span>}
       </button>
 
       {isGrouped && isHovered && (
         <div
-          className={`wd-taskbar-preview${group.type === "sticky" ? " sticky-group" : ""}`}
+          className="wd-taskbar-preview"
           onClick={(event) => event.stopPropagation()}>
-          {group.type === "sticky" ? (
-            <div className="wd-sticky-preview-grid">
-              {group.items.map((item) => (
+          <div className="wd-window-preview-grid">
+            {group.items.map((item) =>
+              group.type === "sticky" ? (
                 <StickyPreviewCard
                   key={item.id}
                   item={item}
@@ -187,23 +230,18 @@ function TaskbarGroupedButton({
                     setHoveredGroupKey(null);
                   }}
                 />
-              ))}
-            </div>
-          ) : (
-            group.items.map((item) => (
-              <button
+              ) : (
+                <TaskbarWindowPreviewCard
                 key={item.id}
-                className={`wd-taskbar-preview-item${item.minimized ? " minimized" : ""}${item.active ? " active" : ""}`}
-                onClick={() => {
-                  item.onClick();
-                  setHoveredGroupKey(null);
-                }}
-                title={item.title}>
-                <TaskbarItemIcon type={item.type} />
-                <span className="wd-taskbar-preview-title">{item.title}</span>
-              </button>
-            ))
-          )}
+                  item={item}
+                  onClick={() => {
+                    item.onClick();
+                    setHoveredGroupKey(null);
+                  }}
+                />
+              ),
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -316,6 +354,13 @@ export default function WindowsDesktop({ visible, onShutdown }) {
       id: `window-${win.id}`,
       type: win.type,
       title: win.type === "video" ? win.title : PROJECTS[win.projIdx].name,
+      previewImage:
+        win.type === "folder"
+          ? PROJECTS[win.projIdx].logo ||
+            PROJECTS[win.projIdx].icon ||
+            PROJECTS[win.projIdx].image ||
+            null
+          : null,
       minimized: win.minimized,
       active: !win.minimized && zOrders[zOrders.length - 1] === win.id,
       onClick: () => (win.minimized ? restoreWindow(win.id) : focusWindow(win.id)),
@@ -436,20 +481,18 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           display: none;
         }
         .wd-tab-btn {
-          display: flex;
+          display: inline-flex;
           align-items: center;
-          gap: clamp(3px, 0.5vw, 6px);
-          padding: clamp(3px, 0.4vh, 4px) clamp(6px, 0.9vw, 12px);
+          justify-content: center;
+          position: relative;
+          width: clamp(30px, 3.8vh, 36px);
+          height: clamp(28px, 3.6vh, 34px);
+          padding: 0;
           background: rgba(219,152,52,0.18);
           border: 1px solid rgba(219,152,52,0.25);
           border-radius: 4px;
           color: #d7c6ac;
-          font-size: clamp(10px, 0.9vw, 12px);
           cursor: pointer;
-          white-space: nowrap;
-          max-width: clamp(100px, 14vw, 160px);
-          overflow: hidden;
-          text-overflow: ellipsis;
           flex-shrink: 0;
         }
         .wd-tab-btn.minimized {
@@ -460,31 +503,38 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
         }
         .wd-tab-count {
-          min-width: 16px;
-          height: 16px;
+          position: absolute;
+          top: -4px;
+          right: -4px;
+          min-width: 14px;
+          height: 14px;
           border-radius: 999px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 0 4px;
-          background: rgba(255,255,255,0.12);
-          color: #f5e9d7;
-          font-size: 10px;
+          padding: 0 3px;
+          background: #f5e9d7;
+          color: #3b2a10;
+          border: 1px solid rgba(13,15,24,0.55);
+          font-size: 9px;
+          font-weight: 700;
           line-height: 1;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         .wd-taskbar-group {
           position: relative;
           display: flex;
           flex-shrink: 0;
+          isolation: isolate;
         }
         .wd-taskbar-preview {
           position: absolute;
           left: 0;
           bottom: calc(100% + 8px);
           min-width: 220px;
-          max-width: min(320px, calc(100vw - 24px));
-          padding: 8px;
-          border-radius: 10px;
+          max-width: min(520px, calc(100vw - 24px));
+          padding: 10px;
+          border-radius: 14px;
           background: rgba(17,20,30,0.97);
           border: 1px solid rgba(219,152,52,0.22);
           box-shadow: 0 18px 36px rgba(0,0,0,0.42);
@@ -492,11 +542,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           flex-direction: column;
           gap: 6px;
           z-index: 320;
-        }
-        .wd-taskbar-preview.sticky-group {
-          min-width: 268px;
-          max-width: min(368px, calc(100vw - 24px));
-          padding: 10px;
         }
         .wd-taskbar-preview-item {
           display: flex;
@@ -525,15 +570,17 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           text-overflow: ellipsis;
           white-space: nowrap;
         }
-        .wd-sticky-preview-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+        .wd-window-preview-grid {
+          display: flex;
           gap: 10px;
+          align-items: stretch;
+          flex-wrap: nowrap;
         }
-        .wd-sticky-preview-card {
-          min-width: 0;
+        .wd-window-preview-card {
+          width: min(230px, calc(50vw - 30px));
+          min-width: 180px;
           border: 1px solid rgba(255,255,255,0.06);
-          border-radius: 10px;
+          border-radius: 12px;
           background: rgba(255,255,255,0.04);
           color: #f4ebd7;
           padding: 10px;
@@ -541,24 +588,59 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           text-align: left;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 10px;
         }
-        .wd-sticky-preview-card:hover,
-        .wd-sticky-preview-card.active {
+        .wd-window-preview-card:hover,
+        .wd-window-preview-card.active {
           background: rgba(219,152,52,0.16);
           border-color: rgba(219,152,52,0.24);
         }
-        .wd-sticky-preview-card.minimized {
+        .wd-window-preview-card.minimized {
           opacity: 0.74;
         }
-        .wd-sticky-preview-card-head {
+        .wd-window-preview-card-head {
           font-size: 11px;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
         }
+        .wd-window-preview-frame {
+          height: 116px;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,0.05);
+          background: linear-gradient(180deg, rgba(52,42,36,0.95) 0%, rgba(32,26,24,0.98) 100%);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+        }
+        .wd-window-preview-frame.sticky {
+          padding: 8px;
+          background: linear-gradient(180deg, rgba(36,34,30,0.95) 0%, rgba(27,23,20,0.98) 100%);
+        }
+        .wd-window-preview-screen {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: rgba(244,235,215,0.82);
+          background:
+            linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%),
+            radial-gradient(circle at 30% 20%, rgba(219,152,52,0.22), transparent 42%),
+            #251f1e;
+        }
+        .wd-window-preview-screen.folder svg,
+        .wd-window-preview-screen.video svg {
+          width: 34px;
+          height: 34px;
+        }
+        .wd-window-preview-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
         .wd-sticky-preview-paper {
-          height: 138px;
+          height: 100%;
           border-radius: 2px;
           background: linear-gradient(180deg, #fff6cc 0%, #f8efb2 100%);
           border: 1px solid rgba(143,126,67,0.24);
@@ -684,10 +766,14 @@ export default function WindowsDesktop({ visible, onShutdown }) {
             width: 34px;
           }
           .wd-tab-btn {
-            max-width: 100%;
+            width: 30px;
           }
-          .wd-sticky-preview-grid {
-            grid-template-columns: 1fr;
+          .wd-window-preview-grid {
+            flex-wrap: wrap;
+          }
+          .wd-window-preview-card {
+            width: 100%;
+            min-width: 0;
           }
           .wd-tray {
             gap: 6px;
