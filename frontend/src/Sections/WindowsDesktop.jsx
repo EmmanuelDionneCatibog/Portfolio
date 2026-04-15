@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import FolderIcon from "../Components/FolderIcon";
 import FolderWindow, { VideoPlayerWindow } from "../Components/FolderWindow";
 import StickyNotesLayer, {
@@ -191,61 +191,89 @@ function TaskbarWindowPreviewCard({ item, onClick }) {
   );
 }
 
-function TaskbarGroupedButton({
-  group,
-  hoveredGroupKey,
-  setHoveredGroupKey,
-}) {
-  const isHovered = hoveredGroupKey === group.key;
-  const isGrouped = group.items.length > 1;
+function TaskbarGroupedButton({ group, onPreviewOpen, onPreviewClose }) {
+  const closeTimerRef = useRef(null);
   const buttonClassName = `wd-tab-btn${group.allMinimized ? " minimized" : ""}${group.hasActive ? " active" : ""}`;
+
+  const openPreview = (event) => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    onPreviewOpen({
+      key: group.key,
+      items: group.items,
+      anchorRect: rect,
+      placement: "top",
+    });
+  };
+
+  const closePreviewSoon = () => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = window.setTimeout(() => {
+      onPreviewClose(group.key);
+      closeTimerRef.current = null;
+    }, 220);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div
       className="wd-taskbar-group"
-      onMouseEnter={() => isGrouped && setHoveredGroupKey(group.key)}
-      onMouseLeave={() => isGrouped && setHoveredGroupKey(null)}
-      onFocus={() => isGrouped && setHoveredGroupKey(group.key)}
-      onBlur={() => isGrouped && setHoveredGroupKey(null)}>
+      onMouseEnter={openPreview}
+      onMouseLeave={closePreviewSoon}
+      onFocus={openPreview}
+      onBlur={closePreviewSoon}>
       <button
         className={buttonClassName}
         onClick={group.onPrimaryClick}
         title={group.items.map((item) => item.title).join(" | ")}>
-        <TaskbarItemIcon type={group.type} stacked={group.type === "sticky" && isGrouped} />
-        {isGrouped && <span className="wd-tab-count">{group.items.length}</span>}
+        <TaskbarItemIcon type={group.type} />
       </button>
-
-      {isGrouped && isHovered && (
-        <div
-          className="wd-taskbar-preview"
-          onClick={(event) => event.stopPropagation()}>
-          <div className="wd-window-preview-grid">
-            {group.items.map((item) =>
-              group.type === "sticky" ? (
-                <StickyPreviewCard
-                  key={item.id}
-                  item={item}
-                  onClick={() => {
-                    item.onClick();
-                    setHoveredGroupKey(null);
-                  }}
-                />
-              ) : (
-                <TaskbarWindowPreviewCard
-                key={item.id}
-                  item={item}
-                  onClick={() => {
-                    item.onClick();
-                    setHoveredGroupKey(null);
-                  }}
-                />
-              ),
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
+}
+
+function getPreviewPosition(anchorRect, previewSize, placement = "top") {
+  const margin = 12;
+  const gap = 10;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let left = anchorRect.left + anchorRect.width / 2 - previewSize.width / 2;
+  let top = anchorRect.top - previewSize.height - gap;
+
+  if (placement === "right") {
+    left = anchorRect.right + gap;
+    top = anchorRect.top + anchorRect.height / 2 - previewSize.height / 2;
+
+    if (left + previewSize.width > viewportWidth - margin) {
+      left = anchorRect.left - previewSize.width - gap;
+    }
+  } else if (top < margin) {
+    top = anchorRect.bottom + gap;
+  }
+
+  left = Math.min(
+    viewportWidth - previewSize.width - margin,
+    Math.max(margin, left),
+  );
+  top = Math.min(
+    viewportHeight - previewSize.height - margin,
+    Math.max(margin, top),
+  );
+
+  return { left, top };
 }
 
 export default function WindowsDesktop({ visible, onShutdown }) {
@@ -253,10 +281,13 @@ export default function WindowsDesktop({ visible, onShutdown }) {
   const [zOrders, setZOrders] = useState([]);
   const [time, setTime] = useState("");
   const [startOpen, setStartOpen] = useState(false);
-  const [hoveredGroupKey, setHoveredGroupKey] = useState(null);
+  const [previewState, setPreviewState] = useState(null);
+  const [previewPosition, setPreviewPosition] = useState(null);
   const [stickyNotes, setStickyNotes] = useState(() => [createStickyNote(0)]);
   const [activeStickyId, setActiveStickyId] = useState(0);
   const nextId = useRef(0);
+  const previewRef = useRef(null);
+  const previewCloseTimerRef = useRef(null);
 
   useEffect(() => {
     const tick = () =>
@@ -283,6 +314,28 @@ export default function WindowsDesktop({ visible, onShutdown }) {
       setActiveStickyId(stickyNotes[0].id);
     }
   }, [activeStickyId, stickyNotes]);
+
+  useEffect(() => {
+    const clearPreview = () => {
+      setPreviewState(null);
+      setPreviewPosition(null);
+    };
+
+    window.addEventListener("scroll", clearPreview, true);
+    window.addEventListener("resize", clearPreview);
+    return () => {
+      window.removeEventListener("scroll", clearPreview, true);
+      window.removeEventListener("resize", clearPreview);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewCloseTimerRef.current) {
+        window.clearTimeout(previewCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   const openWindow = (projIdx) => {
     const id = nextId.current++;
@@ -347,7 +400,10 @@ export default function WindowsDesktop({ visible, onShutdown }) {
     activeStickyId,
     onRestore: restoreStickyNote,
     onMinimize: minimizeStickyNote,
-  });
+  }).map((item) => ({
+    ...item,
+    onPreviewClick: () => restoreStickyNote(Number(item.id.replace("sticky-", ""))),
+  }));
 
   const taskbarGroups = useMemo(() => {
     const windowItems = windows.map((win) => ({
@@ -364,6 +420,8 @@ export default function WindowsDesktop({ visible, onShutdown }) {
       minimized: win.minimized,
       active: !win.minimized && zOrders[zOrders.length - 1] === win.id,
       onClick: () => (win.minimized ? restoreWindow(win.id) : focusWindow(win.id)),
+      onPreviewClick: () =>
+        win.minimized ? restoreWindow(win.id) : focusWindow(win.id),
     }));
 
     const items = [...windowItems, ...stickyTaskbarItems];
@@ -391,6 +449,88 @@ export default function WindowsDesktop({ visible, onShutdown }) {
       };
     });
   }, [activeStickyId, stickyTaskbarItems, windows, zOrders]);
+
+  const desktopItems = useMemo(
+    () =>
+      PROJECTS.map((proj, i) => ({
+        id: `desktop-folder-${i}`,
+        type: "folder",
+        title: proj.name,
+        previewImage: proj.logo || proj.icon || proj.image || null,
+        minimized: false,
+        active: false,
+        onClick: () => openWindow(i),
+        onPreviewClick: () => openWindow(i),
+      })),
+    [],
+  );
+
+  const clearPreviewCloseTimer = () => {
+    if (previewCloseTimerRef.current) {
+      window.clearTimeout(previewCloseTimerRef.current);
+      previewCloseTimerRef.current = null;
+    }
+  };
+
+  const openPreview = ({ key, items, anchorRect, placement }) => {
+    clearPreviewCloseTimer();
+    setPreviewPosition(null);
+    setPreviewState({ key, items, anchorRect, placement });
+  };
+
+  const closePreview = (key) => {
+    setPreviewState((current) => {
+      if (!current || (key && current.key !== key)) return current;
+      return null;
+    });
+    setPreviewPosition(null);
+  };
+
+  const schedulePreviewClose = (key) => {
+    clearPreviewCloseTimer();
+      previewCloseTimerRef.current = window.setTimeout(() => {
+      closePreview(key);
+    }, 220);
+  };
+
+  useLayoutEffect(() => {
+    if (!previewState || !previewRef.current) return;
+
+    const rect = previewRef.current.getBoundingClientRect();
+    setPreviewPosition(
+      getPreviewPosition(
+        previewState.anchorRect,
+        { width: rect.width, height: rect.height },
+        previewState.placement,
+      ),
+    );
+  }, [previewState]);
+
+  const renderPreviewItems = (items) => (
+    <div className="wd-window-preview-grid">
+      {items.map((item) =>
+        item.type === "sticky" ? (
+          <StickyPreviewCard
+            key={item.id}
+            item={item}
+            onClick={() => {
+              item.onPreviewClick?.();
+              closePreview();
+            }}
+          />
+        ) : (
+          <TaskbarWindowPreviewCard
+            key={item.id}
+            item={item}
+            onClick={() => {
+              item.onPreviewClick?.();
+              closePreview();
+            }}
+          />
+        ),
+      )}
+    </div>
+  );
 
   return (
     <>
@@ -475,6 +615,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           flex: 1;
           margin-left: clamp(8px, 1.2vw, 16px);
           overflow-x: auto;
+          overflow-y: visible;
           scrollbar-width: none;
         }
         .wd-tab-list::-webkit-scrollbar {
@@ -502,25 +643,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           background: rgba(219,152,52,0.28);
           box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
         }
-        .wd-tab-count {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          min-width: 14px;
-          height: 14px;
-          border-radius: 999px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0 3px;
-          background: #f5e9d7;
-          color: #3b2a10;
-          border: 1px solid rgba(13,15,24,0.55);
-          font-size: 9px;
-          font-weight: 700;
-          line-height: 1;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
         .wd-taskbar-group {
           position: relative;
           display: flex;
@@ -528,9 +650,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           isolation: isolate;
         }
         .wd-taskbar-preview {
-          position: absolute;
-          left: 0;
-          bottom: calc(100% + 8px);
+          position: fixed;
           min-width: 220px;
           max-width: min(520px, calc(100vw - 24px));
           padding: 10px;
@@ -542,6 +662,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           flex-direction: column;
           gap: 6px;
           z-index: 320;
+          pointer-events: auto;
         }
         .wd-taskbar-preview-item {
           display: flex;
@@ -834,7 +955,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         }}
         onClick={() => {
           setStartOpen(false);
-          setHoveredGroupKey(null);
+          closePreview();
         }}>
         <div
           style={{
@@ -860,6 +981,24 @@ export default function WindowsDesktop({ visible, onShutdown }) {
               key={i}
               name={proj.name}
               onClick={() => openWindow(i)}
+              onHoverStart={(event) =>
+                openPreview({
+                  key: desktopItems[i].id,
+                  items: [desktopItems[i]],
+                  anchorRect: event.currentTarget.getBoundingClientRect(),
+                  placement: "right",
+                })
+              }
+              onHoverEnd={() => schedulePreviewClose(desktopItems[i].id)}
+              onFocusStart={(event) =>
+                openPreview({
+                  key: desktopItems[i].id,
+                  items: [desktopItems[i]],
+                  anchorRect: event.currentTarget.getBoundingClientRect(),
+                  placement: "right",
+                })
+              }
+              onFocusEnd={() => schedulePreviewClose(desktopItems[i].id)}
             />
           ))}
         </div>
@@ -919,8 +1058,8 @@ export default function WindowsDesktop({ visible, onShutdown }) {
               <TaskbarGroupedButton
                 key={group.key}
                 group={group}
-                hoveredGroupKey={hoveredGroupKey}
-                setHoveredGroupKey={setHoveredGroupKey}
+                onPreviewOpen={openPreview}
+                onPreviewClose={schedulePreviewClose}
               />
             ))}
           </div>
@@ -944,6 +1083,22 @@ export default function WindowsDesktop({ visible, onShutdown }) {
             </div>
           </div>
         </div>
+
+        {previewState && (
+          <div
+            ref={previewRef}
+            className="wd-taskbar-preview"
+            style={{
+              left: previewPosition?.left ?? -9999,
+              top: previewPosition?.top ?? -9999,
+              visibility: previewPosition ? "visible" : "hidden",
+            }}
+            onMouseEnter={clearPreviewCloseTimer}
+            onMouseLeave={() => schedulePreviewClose(previewState.key)}
+            onClick={(event) => event.stopPropagation()}>
+            {renderPreviewItems(previewState.items)}
+          </div>
+        )}
 
         {startOpen && (
           <div className="wd-start-menu" onClick={(e) => e.stopPropagation()}>

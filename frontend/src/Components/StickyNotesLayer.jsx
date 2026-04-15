@@ -79,7 +79,7 @@ function getStickyHistorySize(noteCount = 1, viewport = getViewportSize()) {
 export function createStickyNote(id) {
   return {
     id,
-    title: `Sticky Note ${id + 1}`,
+    title: "Sticky Note",
     content: "",
     closed: false,
     minimized: false,

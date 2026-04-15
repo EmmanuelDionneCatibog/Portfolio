@@ -1,16 +1,45 @@
 import { useState } from "react";
 
-export default function FolderIcon({ name, onClick, style }) {
+export default function FolderIcon({
+  name,
+  onClick,
+  style,
+  onHoverStart,
+  onHoverEnd,
+  onFocusStart,
+  onFocusEnd,
+}) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <div
+      tabIndex={0}
       onClick={(e) => {
         e.stopPropagation();
         onClick && onClick(e);
       }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={(e) => {
+        setHovered(true);
+        onHoverStart && onHoverStart(e);
+      }}
+      onMouseLeave={(e) => {
+        setHovered(false);
+        onHoverEnd && onHoverEnd(e);
+      }}
+      onFocus={(e) => {
+        setHovered(true);
+        onFocusStart && onFocusStart(e);
+      }}
+      onBlur={(e) => {
+        setHovered(false);
+        onFocusEnd && onFocusEnd(e);
+      }}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && onClick) {
+          e.preventDefault();
+          onClick(e);
+        }
+      }}
       style={{
         display: "flex",
         flexDirection: "column",
