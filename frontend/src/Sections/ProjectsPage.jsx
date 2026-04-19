@@ -31,8 +31,10 @@ function getFov(width, height) {
 // ── Camera path helpers ───────────────────────────────────────────────────
 const CAM_START_FULL = new THREE.Vector3(0, 3.05, 7.35);
 const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
-const CAM_END_FULL = new THREE.Vector3(0, 1.52, 0.35);
-const LOOK_END_FULL = new THREE.Vector3(0, 1.52, -1.5);
+const CAM_END_FULL = new THREE.Vector3(0, 1.6, 0.62);
+const LOOK_END_FULL = new THREE.Vector3(0, 1.5, -1.28);
+const ZOOM_STAGE_PREVIEW = 0.3;
+const ZOOM_STAGE_DESKTOP = 1;
 
 function buildCameraPath(width, height) {
   const s = getSceneScale(width, height);
@@ -264,17 +266,54 @@ export default function ProjectsPage() {
 
     let scrollProgress = 0;
     let targetProgress = 0;
+    let zoomAnimation = null;
+    let zoomOutStarted = false;
 
     const syncTargetRef = (v) => {
       targetProgress = v;
       targetProgressRef.current = v;
     };
 
+    const setScrollProgress = (v) => {
+      scrollProgress = v;
+      scrollProgressRef.current = v;
+    };
+
+    const startZoomAnimation = (to, duration = 900) => {
+      const from = scrollProgress;
+      if (Math.abs(from - to) < 0.001) {
+        syncTargetRef(to);
+        setScrollProgress(to);
+        zoomAnimation = null;
+        return;
+      }
+      syncTargetRef(to);
+      zoomAnimation = {
+        from,
+        to,
+        duration,
+        startAt: performance.now(),
+      };
+    };
+
+    const isZoomAnimationLocked = () => zoomAnimation !== null;
+
     resetProgressRef.current = () => {
       syncTargetRef(0);
-      scrollProgress = 0;
-      scrollProgressRef.current = 0;
+      setScrollProgress(0);
+      zoomAnimation = null;
+      zoomOutStarted = false;
       glitchTriggered = false;
+    };
+
+    const getNextZoomInTarget = () => {
+      if (scrollProgress < ZOOM_STAGE_PREVIEW - 0.02) return ZOOM_STAGE_PREVIEW;
+      return ZOOM_STAGE_DESKTOP;
+    };
+
+    const getNextZoomOutTarget = () => {
+      if (scrollProgress > ZOOM_STAGE_PREVIEW + 0.02) return ZOOM_STAGE_PREVIEW;
+      return 0;
     };
 
     const onMouseMove = (event) => {
@@ -328,13 +367,13 @@ export default function ProjectsPage() {
         if (
           !showDesktopRef.current &&
           !isRestoringRef.current &&
-          currentProgress >= 0.96
+          currentProgress >= ZOOM_STAGE_DESKTOP - 0.02
         ) {
           glitchTriggered = true;
           glitchFiredRef.current = false;
           triggerGlitch();
         } else {
-          syncTargetRef(1);
+          startZoomAnimation(ZOOM_STAGE_DESKTOP);
         }
       }
       if (raycaster.intersectObjects(paperMeshes).length > 0)
@@ -371,28 +410,36 @@ export default function ProjectsPage() {
         new THREE.Color("#0d1a35"),
         Math.max(0, (p - 0.75) / 0.25),
       );
-      if (p >= 0.99 && !glitchTriggered) {
+      if (p >= ZOOM_STAGE_DESKTOP - 0.01 && !glitchTriggered) {
         glitchTriggered = true;
-        syncTargetRef(1);
+        syncTargetRef(ZOOM_STAGE_DESKTOP);
         triggerGlitch();
       }
     };
 
     const checkZoomOut = () => {
       if (!zoomingOutRef.current) return;
-      if (targetProgress < targetProgressRef.current) {
-        targetProgress = targetProgressRef.current;
-        scrollProgress = targetProgressRef.current;
+      if (!zoomOutStarted) {
+        zoomOutStarted = true;
+        startZoomAnimation(0, 950);
       }
-      syncTargetRef(Math.max(0, targetProgress - 0.022));
-      if (targetProgress <= 0 && scrollProgress < 0.01) {
+      if (
+        zoomOutStarted &&
+        targetProgress <= 0 &&
+        scrollProgress < 0.01 &&
+        !zoomAnimation
+      ) {
         syncTargetRef(0);
-        scrollProgress = 0;
-        scrollProgressRef.current = 0;
+        setScrollProgress(0);
         glitchTriggered = false;
+        zoomOutStarted = false;
         zoomingOutRef.current = false;
         isRestoringRef.current = false;
       }
+    };
+
+    const isMidZoomAnimation = () => {
+      return isZoomAnimationLocked();
     };
 
     const observer = new IntersectionObserver(
@@ -405,16 +452,28 @@ export default function ProjectsPage() {
 
     const onWheel = (e) => {
       if (isRestoringRef.current) return;
+      if (isMidZoomAnimation()) {
+        e.preventDefault();
+        return;
+      }
       if (e.deltaY < 0 && targetProgress <= 0 && scrollProgress < 0.02) return;
-      if (targetProgress >= 1 && scrollProgress > 0.98) return;
       if (!sectionActive && targetProgress <= 0) return;
+      if (e.deltaY > 0 && scrollProgress < ZOOM_STAGE_DESKTOP - 0.02) {
+        e.preventDefault();
+        startZoomAnimation(getNextZoomInTarget());
+        return;
+      }
+      if (e.deltaY < 0 && scrollProgress > 0.02) {
+        e.preventDefault();
+        startZoomAnimation(getNextZoomOutTarget(), 850);
+        return;
+      }
+      if (
+        targetProgress >= ZOOM_STAGE_DESKTOP &&
+        scrollProgress > ZOOM_STAGE_DESKTOP - 0.02
+      )
+        return;
       e.preventDefault();
-      syncTargetRef(
-        Math.max(
-          0,
-          Math.min(1, targetProgress + (e.deltaY > 0 ? 0.35 : -0.35)),
-        ),
-      );
     };
     el.addEventListener("wheel", onWheel, { passive: false });
 
@@ -426,16 +485,25 @@ export default function ProjectsPage() {
       if (isRestoringRef.current) return;
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
+      if (isMidZoomAnimation()) {
+        e.preventDefault();
+        return;
+      }
       if (dy < 0 && targetProgress <= 0 && scrollProgress < 0.02) return;
-      if (dy > 0 && targetProgress >= 1) return;
       if (!sectionActive && targetProgress <= 0) return;
+      if (Math.abs(dy) < 16) return;
+      if (dy > 0 && scrollProgress < ZOOM_STAGE_DESKTOP - 0.02) {
+        e.preventDefault();
+        startZoomAnimation(getNextZoomInTarget());
+        return;
+      }
+      if (dy < 0 && scrollProgress > 0.02) {
+        e.preventDefault();
+        startZoomAnimation(getNextZoomOutTarget(), 850);
+        return;
+      }
+      if (dy > 0 && targetProgress >= ZOOM_STAGE_DESKTOP) return;
       e.preventDefault();
-      syncTargetRef(
-        Math.max(
-          0,
-          Math.min(1, targetProgress + (dy / window.innerHeight) * 1.2),
-        ),
-      );
     };
     el.addEventListener("touchstart", onTouchStart, { passive: true });
     el.addEventListener("touchmove", onTouchMove, { passive: false });
@@ -447,8 +515,21 @@ export default function ProjectsPage() {
       t += 0.008;
 
       checkZoomOut();
-      scrollProgress += (targetProgress - scrollProgress) * 0.06;
-      scrollProgressRef.current = scrollProgress;
+      if (zoomAnimation) {
+        const elapsed = performance.now() - zoomAnimation.startAt;
+        const rawProgress = Math.min(1, elapsed / zoomAnimation.duration);
+        const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
+        const nextProgress =
+          zoomAnimation.from +
+          (zoomAnimation.to - zoomAnimation.from) * easedProgress;
+        setScrollProgress(nextProgress);
+        if (rawProgress >= 1) {
+          setScrollProgress(zoomAnimation.to);
+          zoomAnimation = null;
+        }
+      } else {
+        setScrollProgress(targetProgress);
+      }
       applyProgress(scrollProgress);
 
       // Camera uses live refs — always correct after a resize
@@ -545,4 +626,3 @@ export default function ProjectsPage() {
     </>
   );
 }
-
