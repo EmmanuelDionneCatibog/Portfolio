@@ -9,7 +9,7 @@ export default function FolderIcon({
   onFocusStart,
   onFocusEnd,
 }) {
-  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
 
   return (
     <div
@@ -19,19 +19,17 @@ export default function FolderIcon({
         onClick && onClick(e);
       }}
       onMouseEnter={(e) => {
-        setHovered(true);
         onHoverStart && onHoverStart(e);
       }}
       onMouseLeave={(e) => {
-        setHovered(false);
         onHoverEnd && onHoverEnd(e);
       }}
       onFocus={(e) => {
-        setHovered(true);
+        setFocused(true);
         onFocusStart && onFocusStart(e);
       }}
       onBlur={(e) => {
-        setHovered(false);
+        setFocused(false);
         onFocusEnd && onFocusEnd(e);
       }}
       onKeyDown={(e) => {
@@ -48,8 +46,8 @@ export default function FolderIcon({
         cursor: "pointer",
         padding: "clamp(6px, 1vw, 8px) clamp(8px, 1.1vw, 10px)",
         borderRadius: "6px",
-        background: hovered ? "rgba(219,152,52,0.15)" : "transparent",
-        border: hovered
+        background: focused ? "rgba(219,152,52,0.12)" : "transparent",
+        border: focused
           ? "1px solid rgba(219,152,52,0.3)"
           : "1px solid transparent",
         transition: "background 0.15s, border 0.15s",

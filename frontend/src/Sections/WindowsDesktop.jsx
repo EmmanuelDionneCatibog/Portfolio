@@ -981,24 +981,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
               key={i}
               name={proj.name}
               onClick={() => openWindow(i)}
-              onHoverStart={(event) =>
-                openPreview({
-                  key: desktopItems[i].id,
-                  items: [desktopItems[i]],
-                  anchorRect: event.currentTarget.getBoundingClientRect(),
-                  placement: "right",
-                })
-              }
-              onHoverEnd={() => schedulePreviewClose(desktopItems[i].id)}
-              onFocusStart={(event) =>
-                openPreview({
-                  key: desktopItems[i].id,
-                  items: [desktopItems[i]],
-                  anchorRect: event.currentTarget.getBoundingClientRect(),
-                  placement: "right",
-                })
-              }
-              onFocusEnd={() => schedulePreviewClose(desktopItems[i].id)}
             />
           ))}
         </div>
