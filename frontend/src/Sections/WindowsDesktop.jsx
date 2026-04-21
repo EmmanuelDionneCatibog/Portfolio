@@ -191,7 +191,13 @@ function TaskbarWindowPreviewCard({ item, onClick }) {
   );
 }
 
-function TaskbarGroupedButton({ group, onPreviewOpen, onPreviewClose }) {
+function TaskbarGroupedButton({
+  group,
+  onPreviewOpen,
+  onPreviewClose,
+  onHoverStart,
+  onHoverEnd,
+}) {
   const closeTimerRef = useRef(null);
   const buttonClassName = `wd-tab-btn${group.allMinimized ? " minimized" : ""}${group.hasActive ? " active" : ""}`;
 
@@ -201,6 +207,7 @@ function TaskbarGroupedButton({ group, onPreviewOpen, onPreviewClose }) {
       closeTimerRef.current = null;
     }
     const rect = event.currentTarget.getBoundingClientRect();
+    onHoverStart?.(group.key);
     onPreviewOpen({
       key: group.key,
       items: group.items,
@@ -210,6 +217,7 @@ function TaskbarGroupedButton({ group, onPreviewOpen, onPreviewClose }) {
   };
 
   const closePreviewSoon = () => {
+    onHoverEnd?.(group.key);
     if (closeTimerRef.current) {
       window.clearTimeout(closeTimerRef.current);
     }
@@ -288,6 +296,8 @@ export default function WindowsDesktop({ visible, onShutdown }) {
   const nextId = useRef(0);
   const previewRef = useRef(null);
   const previewCloseTimerRef = useRef(null);
+  const previewHoverKeyRef = useRef(null);
+  const previewHoveredRef = useRef(false);
 
   useEffect(() => {
     const tick = () =>
@@ -472,6 +482,10 @@ export default function WindowsDesktop({ visible, onShutdown }) {
     }
   };
 
+  const setPreviewHoverKey = (key) => {
+    previewHoverKeyRef.current = key;
+  };
+
   const openPreview = ({ key, items, anchorRect, placement }) => {
     clearPreviewCloseTimer();
     setPreviewPosition(null);
@@ -488,7 +502,9 @@ export default function WindowsDesktop({ visible, onShutdown }) {
 
   const schedulePreviewClose = (key) => {
     clearPreviewCloseTimer();
-      previewCloseTimerRef.current = window.setTimeout(() => {
+    previewCloseTimerRef.current = window.setTimeout(() => {
+      if (previewHoverKeyRef.current === key) return;
+      if (previewHoveredRef.current) return;
       closePreview(key);
     }, 220);
   };
@@ -542,6 +558,137 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           transition: opacity 0.4s ease;
           overflow: hidden;
           font-family: system-ui, sans-serif;
+        }
+        .wd-wallpaper {
+          position: absolute;
+          inset: 0;
+          overflow: hidden;
+          background:
+            radial-gradient(circle at 18% 20%, rgba(219,152,52,0.18), transparent 30%),
+            radial-gradient(circle at 78% 22%, rgba(215,198,172,0.10), transparent 26%),
+            radial-gradient(circle at 60% 78%, rgba(219,152,52,0.10), transparent 34%),
+            linear-gradient(135deg, #0b0f18 0%, #13131c 38%, #1a1a2a 70%, #0b0f18 100%);
+        }
+        .wd-wallpaper::before,
+        .wd-wallpaper::after {
+          content: "";
+          position: absolute;
+          inset: -18%;
+          pointer-events: none;
+        }
+        .wd-wallpaper::before {
+          background:
+            radial-gradient(circle at 20% 30%, rgba(219,152,52,0.16), transparent 22%),
+            radial-gradient(circle at 72% 26%, rgba(215,198,172,0.10), transparent 20%),
+            radial-gradient(circle at 56% 78%, rgba(219,152,52,0.12), transparent 24%);
+          filter: blur(18px);
+          animation: wdWallpaperFloat 18s ease-in-out infinite alternate;
+        }
+        .wd-wallpaper::after {
+          background:
+            linear-gradient(115deg, transparent 0%, rgba(255,255,255,0.06) 48%, transparent 54%),
+            linear-gradient(180deg, rgba(255,255,255,0.05), transparent 28%);
+          opacity: 0.42;
+          transform: translateX(-18%);
+          animation: wdWallpaperSweep 14s linear infinite;
+        }
+        .wd-wallpaper-grid,
+        .wd-wallpaper-orb,
+        .wd-wallpaper-glow {
+          position: absolute;
+          pointer-events: none;
+        }
+        .wd-wallpaper-grid {
+          inset: 0;
+          background-image:
+            linear-gradient(rgba(219,152,52,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(219,152,52,0.06) 1px, transparent 1px);
+          background-size: 48px 48px;
+          mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 82%);
+          opacity: 0.16;
+          animation: wdWallpaperGridDrift 24s linear infinite;
+        }
+        .wd-wallpaper-orb {
+          width: 34vw;
+          height: 34vw;
+          min-width: 260px;
+          min-height: 260px;
+          border-radius: 50%;
+          filter: blur(10px);
+          mix-blend-mode: screen;
+          opacity: 0.75;
+        }
+        .wd-wallpaper-orb.one {
+          top: -8vw;
+          right: -6vw;
+          background: radial-gradient(circle, rgba(219,152,52,0.28) 0%, rgba(219,152,52,0.07) 44%, transparent 72%);
+          animation: wdWallpaperOrbOne 20s ease-in-out infinite alternate;
+        }
+        .wd-wallpaper-orb.two {
+          left: -10vw;
+          bottom: -14vw;
+          background: radial-gradient(circle, rgba(215,198,172,0.18) 0%, rgba(215,198,172,0.05) 46%, transparent 74%);
+          animation: wdWallpaperOrbTwo 24s ease-in-out infinite alternate;
+        }
+        .wd-wallpaper-glow {
+          inset: auto 12% 12% auto;
+          width: 240px;
+          height: 240px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 66%);
+          filter: blur(6px);
+          animation: wdWallpaperPulse 8s ease-in-out infinite;
+        }
+        @keyframes wdWallpaperFloat {
+          from {
+            transform: translate3d(-2%, -1%, 0) scale(1);
+          }
+          to {
+            transform: translate3d(3%, 2%, 0) scale(1.08);
+          }
+        }
+        @keyframes wdWallpaperSweep {
+          from {
+            transform: translateX(-22%);
+          }
+          to {
+            transform: translateX(22%);
+          }
+        }
+        @keyframes wdWallpaperGridDrift {
+          from {
+            transform: translate3d(0, 0, 0);
+          }
+          to {
+            transform: translate3d(48px, 24px, 0);
+          }
+        }
+        @keyframes wdWallpaperOrbOne {
+          from {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          to {
+            transform: translate3d(-4vw, 3vw, 0) scale(1.08);
+          }
+        }
+        @keyframes wdWallpaperOrbTwo {
+          from {
+            transform: translate3d(0, 0, 0) scale(1);
+          }
+          to {
+            transform: translate3d(5vw, -4vw, 0) scale(1.1);
+          }
+        }
+        @keyframes wdWallpaperPulse {
+          0%,
+          100% {
+            opacity: 0.4;
+            transform: scale(0.96);
+          }
+          50% {
+            opacity: 0.72;
+            transform: scale(1.08);
+          }
         }
         .wd-taskbar {
           position: absolute;
@@ -652,7 +799,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         .wd-taskbar-preview {
           position: fixed;
           min-width: 220px;
-          max-width: min(520px, calc(100vw - 24px));
+          max-width: calc(100vw - 24px);
           padding: 10px;
           border-radius: 14px;
           background: rgba(17,20,30,0.97);
@@ -696,10 +843,17 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           gap: 10px;
           align-items: stretch;
           flex-wrap: nowrap;
+          overflow-x: auto;
+          padding-bottom: 6px;
+          scrollbar-width: none;
+        }
+        .wd-window-preview-grid::-webkit-scrollbar {
+          display: none;
         }
         .wd-window-preview-card {
-          width: min(230px, calc(50vw - 30px));
-          min-width: 180px;
+          flex: 0 0 220px;
+          width: 220px;
+          min-width: 220px;
           border: 1px solid rgba(255,255,255,0.06);
           border-radius: 12px;
           background: rgba(255,255,255,0.04);
@@ -958,21 +1112,11 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           closePreview();
         }}>
         <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(135deg, #0d1520 0%, #25263a 45%, #1a1530 100%)",
-          }}>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage:
-                "linear-gradient(rgba(219,152,52,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(219,152,52,0.03) 1px,transparent 1px)",
-              backgroundSize: "40px 40px",
-            }}
-          />
+          className="wd-wallpaper">
+          <div className="wd-wallpaper-grid" />
+          <div className="wd-wallpaper-orb one" />
+          <div className="wd-wallpaper-orb two" />
+          <div className="wd-wallpaper-glow" />
         </div>
 
         <div className="wd-icons-col" onClick={(e) => e.stopPropagation()}>
@@ -1042,6 +1186,10 @@ export default function WindowsDesktop({ visible, onShutdown }) {
                 group={group}
                 onPreviewOpen={openPreview}
                 onPreviewClose={schedulePreviewClose}
+                onHoverStart={(key) => setPreviewHoverKey(key)}
+                onHoverEnd={(key) => {
+                  if (previewHoverKeyRef.current === key) setPreviewHoverKey(null);
+                }}
               />
             ))}
           </div>
@@ -1075,8 +1223,14 @@ export default function WindowsDesktop({ visible, onShutdown }) {
               top: previewPosition?.top ?? -9999,
               visibility: previewPosition ? "visible" : "hidden",
             }}
-            onMouseEnter={clearPreviewCloseTimer}
-            onMouseLeave={() => schedulePreviewClose(previewState.key)}
+            onMouseEnter={() => {
+              previewHoveredRef.current = true;
+              clearPreviewCloseTimer();
+            }}
+            onMouseLeave={() => {
+              previewHoveredRef.current = false;
+              schedulePreviewClose(previewState.key);
+            }}
             onClick={(event) => event.stopPropagation()}>
             {renderPreviewItems(previewState.items)}
           </div>

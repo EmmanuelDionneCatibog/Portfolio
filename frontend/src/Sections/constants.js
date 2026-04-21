@@ -36,7 +36,7 @@ export const PROJECTS = [
   {
     name: "Album",
     url: null,
-    tag: "Node / WS",
+    tag: "HTML / CSS",
     subject: "Web Development",
     branch: "Front-End",
     date: "February 2026",
@@ -66,7 +66,7 @@ export const PROJECTS = [
   {
     name: "DICT-TMS",
     url: null,
-    tag: "React / Tailwind CSS / PostgreSQL",
+    tag: "React / Tailwind CSS / JS / PostgreSQL",
     subject: "Web Development",
     branch: "Information Systems",
     date: "April 2026",

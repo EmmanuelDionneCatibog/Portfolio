@@ -185,6 +185,10 @@ function plainTextFromHtml(html) {
     .trim();
 }
 
+export function getStickyPreviewText(content) {
+  return plainTextFromHtml(content || "");
+}
+
 export function StickyNotesTaskbarTabs({
   stickyNotes,
   activeStickyId,
@@ -195,7 +199,7 @@ export function StickyNotesTaskbarTabs({
     id: `sticky-${note.id}`,
     type: "sticky",
     title: note.title,
-    previewText: plainTextFromHtml(note.content) || "Empty note",
+    previewText: getStickyPreviewText(note.content),
     updatedAt: note.updatedAt,
     minimized: note.minimized,
     active: note.id === activeStickyId,
