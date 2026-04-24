@@ -47,6 +47,15 @@ const icons = {
       style={{ objectFit: "contain" }}
     />
   ),
+  PostgreSQL: ({ size = 48 }) => (
+    <img
+      src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg"
+      alt="PostgreSQL"
+      width={size}
+      height={size}
+      style={{ objectFit: "contain" }}
+    />
+  ),
   React: ({ size = 48 }) => (
     <img
       src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg"
@@ -128,6 +137,15 @@ const icons = {
       style={{ objectFit: "contain" }}
     />
   ),
+  "Tailwind CSS": ({ size = 48 }) => (
+    <img
+      src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg"
+      alt="Tailwind CSS"
+      width={size}
+      height={size}
+      style={{ objectFit: "contain" }}
+    />
+  ),
   Arduino: ({ size = 48 }) => (
     <img
       src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/arduino/arduino-original.svg"
@@ -145,10 +163,12 @@ const row1 = [
   "PHP",
   "Python",
   "SQL",
+  "PostgreSQL",
   "React",
   "Three.js",
   "HTML",
   "CSS",
+  "Tailwind CSS",
   "Node.js",
   "Git",
   "GitHub",
@@ -165,11 +185,13 @@ const row2 = [
   "Vite",
   "C++",
   "SQL",
+  "PostgreSQL",
   "PHP",
   "Three.js",
   "Arduino",
   "HTML",
   "CSS",
+  "Tailwind CSS",
   "GitHub",
   "Figma",
 ];
@@ -181,8 +203,10 @@ const row3 = [
   "React",
   "C++",
   "SQL",
+  "PostgreSQL",
   "HTML",
   "CSS",
+  "Tailwind CSS",
   "Python",
   "Vite",
   "JavaScript",
