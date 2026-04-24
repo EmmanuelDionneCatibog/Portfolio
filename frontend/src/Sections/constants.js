@@ -78,4 +78,19 @@ export const PROJECTS = [
     video: null,
     logo: null,
   },
+  {
+    name: "Stitched",
+    url: null,
+    tag: "React / JS / Canvas",
+    subject: "Creative Tools / Simulation",
+    branch: "Information Systems",
+    date: "April 2026",
+    status: "Work in Progress",
+    shortDesc:
+      "Stitched is an interactive embroidery simulator built on Canvas and React. Users stitch patterns onto a woven cloth by clicking and dragging a needle cursor that mirror real hand embroidery.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
+  },
 ];
