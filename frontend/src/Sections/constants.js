@@ -27,7 +27,7 @@ export const PROJECTS = [
     date: "March 2026",
     status: "In-Progress",
     shortDesc:
-      "Emmanuel Dionne B. Catibog's personal portfolio, showcasing his skills, projects, and experience as a Computer Science student.",
+      "My personal portfolio, showcasing my skills, projects, and experience as a Computer Science student.",
     icon: null,
     image: null,
     video: null,
