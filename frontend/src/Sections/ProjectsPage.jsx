@@ -11,6 +11,7 @@ import { createDeskScene } from "../Components/Desk";
 import { createRoomScene } from "../Components/Room";
 import CertificateCarousel from "../Components/CertificateCarousel";
 import "../styles/projects-page.css";
+import "../styles/certificate-carousel.css";
 
 const BASE_WIDTH = 1440;
 const BASE_HEIGHT = 900;
@@ -88,7 +89,21 @@ export default function ProjectsPage() {
   const [showDesktop, setShowDesktop] = useState(false);
   const [showCarousel, setShowCarousel] = useState(false);
   const [hoverLabel, setHoverLabel] = useState(null);
+  const [paperNav, setPaperNav] = useState(null);
   const labelPosRef = useRef(null);
+  const paperNavRef = useRef(null);
+
+  // Temporary toggle so you can focus on the paper animation.
+  // Flip to `true` (or wire to a debug key) when you want the carousel back.
+  const isCertificateCarouselEnabled = () => false;
+
+  const cyclePapersRef = useRef(null);
+
+  const PAPER_CERTIFICATES = [
+    { src: "/DeviceManagement.jpg", title: "Device Management Certification" },
+    { src: "/Python.jpg", title: "Python Certification" },
+    { src: "/Database.jpg", title: "Database Certification" },
+  ];
 
   const triggerGlitch = () => {
     if (glitchFiredRef.current || isRestoringRef.current) return;
@@ -246,10 +261,95 @@ export default function ProjectsPage() {
 
     let paperHoverProgress = 0;
     let folderHoverProgress = 0;
+    let paperFlight = null;
+    const PAPER_SHOOT_MS = 280;
+    const PAPER_RETURN_END_MS = 1040;
+    const PAPER_STAGGER_MS = 70;
+    const PAPER_FLOAT_HOLD_MS = 800;
+
+    const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
+    const easeInOutCubic = (x) =>
+      x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+
+    const getTopPaperMeshes = (count = 1) => {
+      if (paperMeshes.length === 0) return [];
+      return [...paperMeshes]
+        .sort((a, b) => b.position.y - a.position.y)
+        .slice(0, Math.max(0, count));
+    };
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let currentHovered = null;
+
+    // Certificate textures (used as an overlay on the front paper)
+    const certificateLoader = new THREE.TextureLoader();
+    const certificateSources = ["/DeviceManagement.jpg", "/Python.jpg", "/Database.jpg"];
+    const certificateTextures = [null, null, null];
+    certificateSources.forEach((src, i) => {
+      certificateLoader.load(src, (tex) => {
+        certificateTextures[i] = tex;
+        if ("colorSpace" in tex) tex.colorSpace = THREE.SRGBColorSpace;
+        // Mirror vertically (top/bottom flip) only.
+        tex.center.set(0.5, 0.5);
+        tex.rotation = 0;
+        // Mirror vertically.
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(1, -1);
+        tex.offset.set(0, 1);
+        tex.needsUpdate = true;
+      });
+    });
+
+    const ensureCertificateOverlays = () => {
+      if (!paperFlight?.papers?.length) return;
+
+      paperFlight.papers.forEach((p) => {
+        const idx = p.certIndex ?? 0;
+        const tex = certificateTextures[idx];
+        if (!tex) return;
+
+        if (p.overlay) {
+          // If it's already using the right texture, keep it.
+          if (p.overlay.material?.map === tex) return;
+          p.mesh.remove(p.overlay);
+          p.overlay.geometry.dispose();
+          p.overlay.material.dispose();
+          p.overlay = null;
+        }
+
+        const geoParams = p.mesh.geometry?.parameters;
+        const width = geoParams?.width ?? 1.7;
+        const height = geoParams?.height ?? 0.012;
+        const depth = geoParams?.depth ?? 1.32;
+
+        // Match the paper's top face orientation:
+        // the paper box uses Y as thickness, so its top face is the XZ plane.
+        // Rotate so the plane lies on XZ and then offset toward the camera.
+        const overlayGeo = new THREE.PlaneGeometry(width * 0.975, depth * 0.975);
+        overlayGeo.rotateX(-Math.PI / 2);
+        const overlayMat = new THREE.MeshBasicMaterial({
+          map: tex,
+          transparent: true,
+          depthTest: false,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        });
+        const overlay = new THREE.Mesh(overlayGeo, overlayMat);
+        // Offset toward the camera. Depending on the paper's facing, the "front"
+        // normal can be +Y or -Y after billboarding, so put it slightly in front
+        // by pushing along the local axis that points to the camera.
+        const camWorldPos = new THREE.Vector3();
+        camera.getWorldPosition(camWorldPos);
+        const camLocalPos = p.mesh.worldToLocal(camWorldPos.clone());
+        const towardCam = camLocalPos.normalize();
+        overlay.position.copy(towardCam.multiplyScalar(height / 2 + 0.06));
+        overlay.renderOrder = 10;
+        p.mesh.add(overlay);
+        p.overlay = overlay;
+      });
+    };
 
     // Label anchors are in LOCAL scene space (before scale).
     // In the animation loop we scale them by `s` before projecting.
@@ -317,6 +417,8 @@ export default function ProjectsPage() {
     };
 
     const onMouseMove = (event) => {
+      // Don't show hover outlines while the papers are flying / parked in front.
+      if (paperFlight) return;
       const rect = renderer.domElement.getBoundingClientRect();
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
@@ -358,6 +460,45 @@ export default function ProjectsPage() {
       mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
       mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
       raycaster.setFromCamera(mouse, camera);
+
+      const paperHits = raycaster.intersectObjects(paperMeshes);
+
+      // Keep papers in front until user clicks outside them.
+      // When dismissing, don't trigger any other click actions.
+      if (paperHits.length === 0 && paperFlight?.phase === "front") {
+        // Hide certificates immediately when dismissing.
+        paperFlight.papers.forEach((p) => {
+          if (p.overlay) {
+            p.mesh.remove(p.overlay);
+            p.overlay.geometry.dispose();
+            p.overlay.material.dispose();
+            p.overlay = null;
+          }
+        });
+        paperFlight.phase = "dismiss";
+        paperFlight.dismissAt = performance.now();
+        paperFlight.didHideOverlays = true;
+        // Reverse from the *current* positions so dismiss is smooth.
+        paperFlight.papers.forEach((p) => {
+          p.dismissFromPos = p.mesh.position.clone();
+          p.dismissFromQuat = p.mesh.quaternion.clone();
+        });
+        outlinePass.selectedObjects = [];
+        renderer.domElement.style.cursor = "default";
+        if (paperNavRef.current?.visible) {
+          paperNavRef.current = { x: 0, y: 0, visible: false };
+          setPaperNav(null);
+        }
+        // Ensure the stack fully settles back (no lingering hover/floating state)
+        currentHovered = null;
+        outlinePass.selectedObjects = [];
+        labelPosRef.current = null;
+        setHoverLabel(null);
+        return;
+      }
+
+      // While papers are active, block other click interactions (like laptop zoom).
+      if (paperFlight) return;
       if (raycaster.intersectObjects(laptopMeshes).length > 0) {
         const currentProgress = Math.max(
           targetProgressRef.current,
@@ -376,9 +517,125 @@ export default function ProjectsPage() {
           startZoomAnimation(ZOOM_STAGE_DESKTOP);
         }
       }
-      if (raycaster.intersectObjects(paperMeshes).length > 0)
-        setShowCarousel(true);
+
+      if (paperHits.length > 0) {
+        if (!paperFlight) {
+          const topPapers = getTopPaperMeshes(3);
+          if (topPapers.length > 0) {
+            const startAt = performance.now();
+
+            // Shared base position just in front of the camera (world space),
+            // converted per-mesh into its local parent space.
+            const camDir = new THREE.Vector3();
+            camera.getWorldDirection(camDir);
+            const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(
+              camera.quaternion,
+            );
+            const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(
+              camera.quaternion,
+            );
+            const baseFrontWorld = camera.position
+              .clone()
+              // Further away from camera so it's less "in your face"
+              .add(camDir.multiplyScalar(3.0))
+              // Slightly below center
+              .add(camUp.clone().multiplyScalar(-0.18))
+              // Centered
+              .add(camRight.clone().multiplyScalar(0));
+
+            const yToMinusZ = new THREE.Quaternion().setFromUnitVectors(
+              new THREE.Vector3(0, 1, 0),
+              new THREE.Vector3(0, 0, -1),
+            );
+
+            paperFlight = {
+              startAt,
+              phase: "enter",
+              dismissAt: null,
+              cycleAt: null,
+              baseFrontWorld,
+              camDirWorld: camDir.clone(),
+              camRightWorld: camRight.clone(),
+              camUpWorld: camUp.clone(),
+              papers: topPapers.map((mesh, i) => {
+                const paperIndex = paperMeshes.indexOf(mesh);
+                const startPos = mesh.position.clone();
+                const startRot = mesh.rotation.clone();
+                const startQuat = mesh.quaternion.clone();
+                // Stack: tiny vertical offset + tiny depth offset per sheet
+                const frontWorld = baseFrontWorld
+                  .clone()
+                  .add(camUp.clone().multiplyScalar(i * 0.012))
+                  .add(camDir.clone().multiplyScalar(i * 0.008));
+                const frontPos = mesh.parent.worldToLocal(frontWorld);
+                return {
+                  mesh,
+                  paperIndex,
+                  startPos,
+                  startRot,
+                  startQuat,
+                  offPos: startPos
+                    .clone()
+                    .add(new THREE.Vector3(-9 - i * 0.6, 0, 0)),
+                  frontPos,
+                  targetQuat: camera.quaternion.clone().multiply(yToMinusZ),
+                  returnStartQuat: null,
+                  didReturnStart: false,
+                  overlay: null,
+                  certIndex: i,
+                };
+              }),
+            };
+          }
+        }
+        // Remove outline highlight on click (especially noticeable while flying).
+        outlinePass.selectedObjects = [];
+        renderer.domElement.style.cursor = "default";
+        // Hide hover label ("CERTIFICATIONS") while papers are active.
+        labelPosRef.current = null;
+        setHoverLabel(null);
+        if (isCertificateCarouselEnabled()) setShowCarousel(true);
+      }
     };
+
+    const beginCycle = (dir) => {
+      if (!paperFlight || paperFlight.phase !== "front") return;
+
+      const current = paperFlight.papers.slice();
+      const moving =
+        dir === "next" ? current[0] : current[current.length - 1];
+      const nextOrder =
+        dir === "next"
+          ? [...current.slice(1), current[0]]
+          : [current[current.length - 1], ...current.slice(0, -1)];
+
+      paperFlight.cycleDir = dir;
+      paperFlight.cycleMovingMesh = moving?.mesh ?? null;
+      paperFlight.cycleNextOrder = nextOrder;
+      paperFlight.cycleAt = performance.now();
+      paperFlight.phase = "cycle";
+
+      // Prepare from/to transforms for each mesh based on the *next* ordering.
+      const baseFrontWorld = paperFlight.baseFrontWorld;
+      const camDir = paperFlight.camDirWorld;
+      const camUp = paperFlight.camUpWorld;
+      nextOrder.forEach((p, i) => {
+        const frontWorld = baseFrontWorld
+          .clone()
+          .add(camUp.clone().multiplyScalar(i * 0.012))
+          .add(camDir.clone().multiplyScalar(i * 0.008));
+        p.cycleToPos = p.mesh.parent.worldToLocal(frontWorld);
+        p.cycleToQuat = p.targetQuat.clone();
+      });
+      current.forEach((p) => {
+        p.cycleFromPos = p.mesh.position.clone();
+        p.cycleFromQuat = p.mesh.quaternion.clone();
+      });
+
+      // Overlays stay attached to each paper; no swapping needed.
+    };
+
+    cyclePapersRef.current = beginCycle;
 
     renderer.domElement.addEventListener("mousemove", onMouseMove);
     renderer.domElement.addEventListener("click", onClick);
@@ -451,6 +708,10 @@ export default function ProjectsPage() {
     if (sectionRef.current) observer.observe(sectionRef.current);
 
     const onWheel = (e) => {
+      if (paperFlight) {
+        e.preventDefault();
+        return;
+      }
       if (isRestoringRef.current) return;
       if (isMidZoomAnimation()) {
         e.preventDefault();
@@ -482,6 +743,10 @@ export default function ProjectsPage() {
       touchStartY = e.touches[0].clientY;
     };
     const onTouchMove = (e) => {
+      if (paperFlight) {
+        e.preventDefault();
+        return;
+      }
       if (isRestoringRef.current) return;
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
@@ -552,6 +817,7 @@ export default function ProjectsPage() {
       paperHoverProgress +=
         ((currentHovered === "paper" ? 1 : 0) - paperHoverProgress) * 0.08;
       paperMeshes.forEach((m, i) => {
+        if (paperFlight?.papers?.some((p) => p.mesh === m)) return;
         m.position.y =
           paperOrigins[i].y +
           (paperTargets[i].y - paperOrigins[i].y) * paperHoverProgress;
@@ -560,6 +826,212 @@ export default function ProjectsPage() {
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
 
+      // Paper "fly off left then pop back in front of camera"
+      if (paperFlight) {
+        const now = performance.now();
+
+        const returnDur = PAPER_RETURN_END_MS - PAPER_SHOOT_MS;
+
+        if (paperFlight.phase === "enter") {
+          let allDone = true;
+          paperFlight.papers.forEach((p, idx) => {
+            const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
+            if (elapsed <= 0) {
+              allDone = false;
+              return;
+            }
+
+            // Phase 1: shoot left (stack -> offscreen)
+            if (elapsed < PAPER_SHOOT_MS) {
+              allDone = false;
+              const t = easeOutCubic(elapsed / PAPER_SHOOT_MS);
+              p.mesh.position.lerpVectors(p.startPos, p.offPos, t);
+              p.mesh.rotation.z = p.startRot.z + t * 0.9;
+              p.mesh.rotation.x = p.startRot.x + t * 0.25;
+              return;
+            }
+
+            // Phase 2: fly to center (offscreen -> frontPos) + become upright
+            if (elapsed < PAPER_RETURN_END_MS) {
+              allDone = false;
+              const t = easeInOutCubic((elapsed - PAPER_SHOOT_MS) / returnDur);
+              p.mesh.position.lerpVectors(p.offPos, p.frontPos, t);
+
+              if (!p.didReturnStart) {
+                p.didReturnStart = true;
+                p.returnStartQuat = p.mesh.quaternion.clone();
+              }
+
+              if (p.returnStartQuat) {
+                p.mesh.quaternion.copy(p.returnStartQuat).slerp(p.targetQuat, t);
+              } else {
+                p.mesh.quaternion.copy(p.targetQuat);
+              }
+
+              return;
+            }
+
+            // Done: keep in front
+            p.mesh.position.copy(p.frontPos);
+            p.mesh.quaternion.copy(p.targetQuat);
+          });
+
+          if (allDone) {
+            paperFlight.phase = "front";
+            ensureCertificateOverlays();
+          }
+        } else if (paperFlight.phase === "cycle") {
+          const elapsed = now - (paperFlight.cycleAt ?? now);
+          const dur = 360;
+          const t = easeInOutCubic(Math.min(1, elapsed / dur));
+          const sideBump = Math.sin(Math.PI * t);
+
+          const camDir = paperFlight.camDirWorld ?? new THREE.Vector3(0, 0, -1);
+          const camUp = paperFlight.camUpWorld ?? new THREE.Vector3(0, 1, 0);
+          const camRight =
+            paperFlight.camRightWorld ?? new THREE.Vector3(1, 0, 0);
+
+          const sideDir = (paperFlight.cycleDir ?? "next") === "next" ? 1 : -1;
+          const movingMesh = paperFlight.cycleMovingMesh;
+
+          paperFlight.papers.forEach((p) => {
+            const pos = p.cycleFromPos.clone().lerp(p.cycleToPos, t);
+            if (movingMesh && p.mesh === movingMesh) {
+              // Make the sheet swing fully to the side first (fully visible),
+              // then only later move into the back/front of the stack.
+              const split = 0.6;
+              const sideT = Math.min(1, t / split);
+              const backT = t < split ? 0 : (t - split) / (1 - split);
+              const sideEase = easeOutCubic(sideT);
+              const backEase = easeInOutCubic(backT);
+
+              const maxSide = 0.92;
+              const maxUp = 0.14;
+              const maxBack = 0.48;
+
+              const sideAmt = maxSide * sideEase * (1 - backEase) * sideDir;
+              const upAmt = maxUp * sideEase * (1 - backEase);
+              pos.add(camRight.clone().multiplyScalar(sideAmt));
+              pos.add(camUp.clone().multiplyScalar(upAmt));
+              pos.add(camDir.clone().multiplyScalar(maxBack * backEase));
+            }
+            p.mesh.position.copy(pos);
+            p.mesh.quaternion.copy(p.cycleFromQuat).slerp(p.cycleToQuat, t);
+          });
+
+          // Keep certificate overlays present while cycling
+          ensureCertificateOverlays();
+
+          if (t >= 1) {
+            // Apply the new ordering
+            if (paperFlight.cycleNextOrder)
+              paperFlight.papers = paperFlight.cycleNextOrder;
+            paperFlight.cycleNextOrder = null;
+            paperFlight.cycleMovingMesh = null;
+
+            // Persist the new "front" target positions for dismiss/next cycles.
+            paperFlight.papers.forEach((p) => {
+              if (p.cycleToPos) p.frontPos = p.cycleToPos.clone();
+            });
+
+            ensureCertificateOverlays();
+            paperFlight.phase = "front";
+          }
+        } else if (paperFlight.phase === "dismiss") {
+          // Safety: ensure overlays are hidden while returning to the desk.
+          if (!paperFlight.didHideOverlays) {
+            paperFlight.papers.forEach((p) => {
+              if (p.overlay) {
+                p.mesh.remove(p.overlay);
+                p.overlay.geometry.dispose();
+                p.overlay.material.dispose();
+                p.overlay = null;
+              }
+            });
+            paperFlight.didHideOverlays = true;
+          }
+          let allDone = true;
+          paperFlight.papers.forEach((p, idx) => {
+            const baseAt = paperFlight.dismissAt ?? now;
+            const elapsed = now - baseAt - idx * PAPER_STAGGER_MS;
+            if (elapsed <= 0) {
+              allDone = false;
+              return;
+            }
+
+            // Reverse Phase 2: center -> offscreen
+            if (elapsed < returnDur) {
+              allDone = false;
+              const t = easeInOutCubic(elapsed / returnDur);
+              const fromPos = p.dismissFromPos ?? p.frontPos;
+              const fromQuat = p.dismissFromQuat ?? p.targetQuat;
+              p.mesh.position.lerpVectors(fromPos, p.offPos, t);
+              p.mesh.quaternion.copy(fromQuat).slerp(p.startQuat, t);
+              return;
+            }
+
+            // Reverse Phase 1: offscreen -> "floating stack" (above desk)
+            const floatDur = 340;
+            const t2Raw = Math.min(1, Math.max(0, (elapsed - returnDur) / floatDur));
+            const t2 = easeInOutCubic(t2Raw);
+            const floatPos = p.startPos.clone();
+            if (typeof p.paperIndex === "number" && p.paperIndex >= 0) {
+              floatPos.y = paperTargets[p.paperIndex].y;
+            } else {
+              floatPos.y += 0.18;
+            }
+            p.mesh.position.lerpVectors(p.offPos, floatPos, t2);
+            p.mesh.rotation.copy(p.startRot);
+            if (typeof p.paperIndex === "number" && p.paperIndex >= 0) {
+              p.mesh.rotation.y = paperTargets[p.paperIndex].ry;
+            }
+            if (t2Raw < 1) {
+              allDone = false;
+              return;
+            }
+
+            // Hold the floating pose for a bit before settling down.
+            const holdRaw = Math.min(
+              1,
+              Math.max(
+                0,
+                (elapsed - returnDur - floatDur) / PAPER_FLOAT_HOLD_MS,
+              ),
+            );
+            if (holdRaw < 1) {
+              // Stay at hover target during hold.
+              p.mesh.position.copy(floatPos);
+              allDone = false;
+              return;
+            }
+
+          });
+
+          if (allDone) {
+            // Hand off to the existing hover animation for the "float down":
+            // keep hovered pose (progress=1), then let it ease back to rest (0)
+            // because the mouse is not hovering the stack.
+            currentHovered = null;
+            paperHoverProgress = 1;
+
+            paperFlight.papers.forEach((p) => {
+              if (p.overlay) {
+                p.mesh.remove(p.overlay);
+                p.overlay.geometry.dispose();
+                p.overlay.material.dispose();
+                p.overlay = null;
+              }
+            });
+            outlinePass.selectedObjects = [];
+            renderer.domElement.style.cursor = "default";
+            paperFlight = null;
+          }
+        }
+      }
+
+      // Ensure the "CERTIFICATIONS" hover label doesn't linger behind.
+      if (paperFlight && hoverLabel) setHoverLabel(null);
+
       // Folder hover
       folderHoverProgress +=
         ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
@@ -567,6 +1039,53 @@ export default function ProjectsPage() {
         folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
 
       composer.render();
+
+      // Paper nav arrows (screen-space) while papers are in front
+      if (paperFlight?.phase === "front") {
+        // Anchor arrows to the *stack center* (not the moving paper), so they
+        // don't shift during page-turn animations.
+        const baseWorld = paperFlight.baseFrontWorld;
+        const centerNdc = baseWorld.clone().project(camera);
+        const rect = renderer.domElement.getBoundingClientRect();
+        const centerX = (centerNdc.x * 0.5 + 0.5) * rect.width + rect.left;
+        const centerY = (-centerNdc.y * 0.5 + 0.5) * rect.height + rect.top;
+
+        // Approximate paper half-width in screen space by projecting a point
+        // offset along camera-right.
+        const camRight = paperFlight.camRightWorld ?? new THREE.Vector3(1, 0, 0);
+        const halfWWorld = 0.85; // ~ paper width / 2 (1.7/2)
+        const rightEdgeNdc = baseWorld
+          .clone()
+          .add(camRight.clone().multiplyScalar(halfWWorld))
+          .project(camera);
+        const rightEdgeX =
+          (rightEdgeNdc.x * 0.5 + 0.5) * rect.width + rect.left;
+        const halfWpx = Math.abs(rightEdgeX - centerX);
+
+        const edgePad = 2; // closer
+        const next = {
+          x: centerX,
+          y: centerY,
+          leftX: centerX - halfWpx - edgePad,
+          rightX: centerX + halfWpx + edgePad,
+          visible: true,
+        };
+          const prev = paperNavRef.current;
+          if (
+            !prev ||
+            prev.visible !== next.visible ||
+            Math.abs((prev.x ?? 0) - next.x) > 0.5 ||
+            Math.abs((prev.y ?? 0) - next.y) > 0.5 ||
+            Math.abs((prev.leftX ?? 0) - next.leftX) > 0.5 ||
+            Math.abs((prev.rightX ?? 0) - next.rightX) > 0.5
+          ) {
+            paperNavRef.current = next;
+            setPaperNav(next);
+          }
+      } else if (paperFlight?.phase !== "cycle" && paperNavRef.current?.visible) {
+        paperNavRef.current = { x: 0, y: 0, visible: false };
+        setPaperNav(null);
+      }
 
       // Hover label — scale local anchor into world space before projecting
       if (labelPosRef.current) {
@@ -617,6 +1136,69 @@ export default function ProjectsPage() {
             "--projects-hover-y": `${hoverLabel.y}px`,
           }}>
           {hoverLabel.text}
+        </div>
+      )}
+
+      {paperNav?.visible && (
+        <div
+          style={{
+            position: "fixed",
+            left: 0,
+            top: 0,
+            width: "100%",
+            height: "100%",
+            pointerEvents: "none",
+            zIndex: 900,
+          }}>
+          <button
+            className="cc-arrow cc-arrow-left"
+            onClick={() => cyclePapersRef.current?.("prev")}
+            aria-label="Previous"
+            style={{
+              position: "absolute",
+              left: `${paperNav.leftX ?? paperNav.x - 190}px`,
+              top: `${paperNav.y}px`,
+              transform: "translate(-50%, -50%)",
+              pointerEvents: "auto",
+            }}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M15 18L9 12L15 6"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+
+          <button
+            className="cc-arrow cc-arrow-right"
+            onClick={() => cyclePapersRef.current?.("next")}
+            aria-label="Next"
+            style={{
+              position: "absolute",
+              left: `${paperNav.rightX ?? paperNav.x + 190}px`,
+              top: `${paperNav.y}px`,
+              transform: "translate(-50%, -50%)",
+              pointerEvents: "auto",
+            }}>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M9 18L15 12L9 6"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
         </div>
       )}
 
