@@ -9,7 +9,6 @@ import GlitchOverlay from "../Components/GlitchOverlay";
 import WindowsDesktop from "./WindowsDesktop";
 import { createDeskScene } from "../Components/Desk";
 import { createRoomScene } from "../Components/Room";
-import CertificateCarousel from "../Components/CertificateCarousel";
 import "../styles/projects-page.css";
 import "../styles/certificate-carousel.css";
 
@@ -87,23 +86,12 @@ export default function ProjectsPage() {
 
   const [glitching, setGlitching] = useState(false);
   const [showDesktop, setShowDesktop] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);
   const [hoverLabel, setHoverLabel] = useState(null);
   const [paperNav, setPaperNav] = useState(null);
   const labelPosRef = useRef(null);
   const paperNavRef = useRef(null);
 
-  // Temporary toggle so you can focus on the paper animation.
-  // Flip to `true` (or wire to a debug key) when you want the carousel back.
-  const isCertificateCarouselEnabled = () => false;
-
   const cyclePapersRef = useRef(null);
-
-  const PAPER_CERTIFICATES = [
-    { src: "/DeviceManagement.jpg", title: "Device Management Certification" },
-    { src: "/Python.jpg", title: "Python Certification" },
-    { src: "/Database.jpg", title: "Database Certification" },
-  ];
 
   const triggerGlitch = () => {
     if (glitchFiredRef.current || isRestoringRef.current) return;
@@ -231,6 +219,9 @@ export default function ProjectsPage() {
     gammaPass.renderToScreen = true;
     composer.addPass(gammaPass);
 
+    // Enable pointer-driven dragging on touch devices (avoid native panning).
+    renderer.domElement.style.touchAction = "none";
+
     // Mesh collections for hover / raycasting
     const paperMeshes = [];
     const laptopMeshes = [];
@@ -250,12 +241,14 @@ export default function ProjectsPage() {
       ry: m.rotation.y,
     }));
     const paperTargets = paperMeshes.map((m, i) => {
-      if (i < paperMeshes.length - 2)
+      // Float the top 3 sheets on hover (instead of just 2).
+      if (i < paperMeshes.length - 3)
         return { y: m.position.y, ry: m.rotation.y };
-      const t2 = i - (paperMeshes.length - 2);
+      const t2 = i - (paperMeshes.length - 3);
       return {
-        y: m.position.y + 0.35 + t2 * 0.2,
-        ry: m.rotation.y + (t2 === 0 ? -0.2 : 0.2),
+        // Keep the floating sheets a bit closer together.
+        y: m.position.y + 0.32 + t2 * 0.14,
+        ry: m.rotation.y + (t2 === 1 ? -0.14 : 0.14),
       };
     });
 
@@ -594,12 +587,44 @@ export default function ProjectsPage() {
         // Hide hover label ("CERTIFICATIONS") while papers are active.
         labelPosRef.current = null;
         setHoverLabel(null);
-        if (isCertificateCarouselEnabled()) setShowCarousel(true);
       }
     };
 
+    const finishCycleImmediate = () => {
+      if (!paperFlight || paperFlight.phase !== "cycle") return false;
+
+      // Snap meshes to the end state of the current cycle immediately so a
+      // quick direction change (Next then Back) feels responsive.
+      paperFlight.papers.forEach((p) => {
+        if (p.cycleToPos) p.mesh.position.copy(p.cycleToPos);
+        if (p.cycleToQuat) p.mesh.quaternion.copy(p.cycleToQuat);
+      });
+
+      if (paperFlight.cycleNextOrder) paperFlight.papers = paperFlight.cycleNextOrder;
+      paperFlight.cycleNextOrder = null;
+      paperFlight.cycleMovingMesh = null;
+      paperFlight.cycleAt = null;
+
+      // Persist the new "front" target positions for dismiss/next cycles.
+      paperFlight.papers.forEach((p) => {
+        if (p.cycleToPos) p.frontPos = p.cycleToPos.clone();
+      });
+
+      ensureCertificateOverlays();
+      paperFlight.phase = "front";
+      return true;
+    };
+
     const beginCycle = (dir) => {
-      if (!paperFlight || paperFlight.phase !== "front") return;
+      if (!paperFlight) return;
+
+      if (paperFlight.phase === "cycle") {
+        finishCycleImmediate();
+      }
+
+      if (paperFlight.phase !== "front") return;
+
+      paperFlight.queuedCycleDir = null;
 
       const current = paperFlight.papers.slice();
       const moving =
@@ -637,8 +662,150 @@ export default function ProjectsPage() {
 
     cyclePapersRef.current = beginCycle;
 
+    // Drag/swipe on the certificates (papers in front) to cycle.
+    const dragState = {
+      active: false,
+      startX: 0,
+      startY: 0,
+      paper: null,
+      startWorld: null,
+      grabOffsetWorld: null,
+      startLocalPos: null,
+      startLocalQuat: null,
+    };
+
+    const getPaperFlightHits = (event) => {
+      if (!paperFlight?.papers?.length) return [];
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const meshes = paperFlight.papers.map((p) => p.mesh);
+      return raycaster.intersectObjects(meshes);
+    };
+
+    const onPointerDown = (event) => {
+      // Only enforce mouse-button checks for actual mouse pointers.
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      if (!paperFlight) return;
+      if (paperFlight.phase === "cycle") finishCycleImmediate();
+      if (paperFlight.phase !== "front") return;
+      const hits = getPaperFlightHits(event);
+      if (hits.length === 0) return;
+
+      const hitMesh = hits[0].object;
+      const hitPaper = paperFlight.papers.find((p) => p.mesh === hitMesh) ?? null;
+      if (!hitPaper) return;
+
+      dragState.active = true;
+      dragState.startX = event.clientX;
+      dragState.startY = event.clientY;
+      dragState.paper = hitPaper;
+      const meshWorldPos = hitMesh.getWorldPosition(new THREE.Vector3());
+      // Use the actual hit point so the paper responds immediately even if the
+      // mesh origin is offset from where the user grabbed.
+      dragState.startWorld = hits[0].point.clone();
+      dragState.grabOffsetWorld = meshWorldPos.sub(hits[0].point);
+      dragState.startLocalPos = hitMesh.position.clone();
+      dragState.startLocalQuat = hitMesh.quaternion.clone();
+      renderer.domElement.style.cursor = "grabbing";
+
+      // Hide arrows while dragging.
+      paperFlight.phase = "drag";
+      paperFlight.dragReturn = null;
+
+      // Ensure we keep receiving move/up events even if the pointer leaves
+      // the canvas while dragging.
+      try {
+        renderer.domElement.setPointerCapture?.(event.pointerId);
+      } catch {
+        // Ignore if unsupported.
+      }
+    };
+
+    const onPointerMove = (event) => {
+      if (!dragState.active) return;
+      if (!paperFlight) return;
+      if (!dragState.paper) return;
+
+      event.preventDefault?.();
+      const dx = event.clientX - dragState.startX;
+      const dy = event.clientY - dragState.startY;
+
+      // Make the grabbed paper follow the cursor while dragging.
+      const rect = renderer.domElement.getBoundingClientRect();
+      const dist = dragState.startWorld.distanceTo(camera.position);
+      const vFov = (camera.fov * Math.PI) / 180;
+      const worldPerPxY = (2 * dist * Math.tan(vFov / 2)) / Math.max(1, rect.height);
+      const worldPerPxX = worldPerPxY * camera.aspect;
+
+      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+
+      const offsetWorld = camRight.multiplyScalar(dx * worldPerPxX).add(
+        camUp.multiplyScalar(-dy * worldPerPxY),
+      );
+
+      const targetWorld = dragState.startWorld
+        .clone()
+        .add(offsetWorld)
+        .add(dragState.grabOffsetWorld ?? new THREE.Vector3());
+      const parent = dragState.paper.mesh.parent;
+      if (parent) {
+        dragState.paper.mesh.position.copy(parent.worldToLocal(targetWorld));
+      }
+    };
+
+    const endDrag = (event) => {
+      if (!dragState.active) return;
+
+      const dx = (event?.clientX ?? dragState.startX) - dragState.startX;
+      const dy = (event?.clientY ?? dragState.startY) - dragState.startY;
+      const swipeThresholdPx = 56;
+      const horizDominant = Math.abs(dx) > Math.abs(dy) + 12;
+      const didSwipe = horizDominant && Math.abs(dx) >= swipeThresholdPx;
+
+      // Smoothly return the dragged paper back into the stack on release.
+      if (paperFlight && dragState.paper) {
+        paperFlight.phase = "front";
+        paperFlight.dragReturn = null;
+
+        if (didSwipe) {
+          beginCycle(dx < 0 ? "next" : "prev");
+        } else {
+          paperFlight.dragReturn = {
+            paper: dragState.paper,
+            fromPos: dragState.paper.mesh.position.clone(),
+            toPos:
+              dragState.paper.frontPos?.clone() ??
+              dragState.paper.mesh.position.clone(),
+            fromQuat: dragState.paper.mesh.quaternion.clone(),
+            toQuat:
+              dragState.paper.targetQuat?.clone() ??
+              dragState.paper.mesh.quaternion.clone(),
+            startAt: performance.now(),
+            dur: 180,
+          };
+        }
+      }
+
+      dragState.active = false;
+      dragState.paper = null;
+      dragState.startWorld = null;
+      dragState.grabOffsetWorld = null;
+      dragState.startLocalPos = null;
+      dragState.startLocalQuat = null;
+      renderer.domElement.style.cursor = "default";
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+
     renderer.domElement.addEventListener("mousemove", onMouseMove);
     renderer.domElement.addEventListener("click", onClick);
+    renderer.domElement.addEventListener("pointerdown", onPointerDown);
+    renderer.domElement.addEventListener("pointermove", onPointerMove);
 
     const onResize = () => {
       const nw = el.clientWidth;
@@ -832,7 +999,10 @@ export default function ProjectsPage() {
 
         const returnDur = PAPER_RETURN_END_MS - PAPER_SHOOT_MS;
 
-        if (paperFlight.phase === "enter") {
+        // While dragging, the pointer handlers directly control the mesh.
+        if (paperFlight.phase === "drag") {
+          ensureCertificateOverlays();
+        } else if (paperFlight.phase === "enter") {
           let allDone = true;
           paperFlight.papers.forEach((p, idx) => {
             const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
@@ -879,6 +1049,17 @@ export default function ProjectsPage() {
           if (allDone) {
             paperFlight.phase = "front";
             ensureCertificateOverlays();
+          }
+        } else if (paperFlight.phase === "front") {
+          // If we just released a drag, ease the dragged sheet back into place.
+          const dr = paperFlight.dragReturn;
+          if (dr?.paper && dr.startAt && dr.dur) {
+            const tRaw = Math.min(1, Math.max(0, (now - dr.startAt) / dr.dur));
+            const t = easeInOutCubic(tRaw);
+            dr.paper.mesh.position.lerpVectors(dr.fromPos, dr.toPos, t);
+            dr.paper.mesh.quaternion.copy(dr.fromQuat).slerp(dr.toQuat, t);
+            ensureCertificateOverlays();
+            if (tRaw >= 1) paperFlight.dragReturn = null;
           }
         } else if (paperFlight.phase === "cycle") {
           const elapsed = now - (paperFlight.cycleAt ?? now);
@@ -936,6 +1117,12 @@ export default function ProjectsPage() {
 
             ensureCertificateOverlays();
             paperFlight.phase = "front";
+
+            // Apply any queued direction immediately (common when the user
+            // hits Back/Next before the previous cycle finishes).
+            const queuedDir = paperFlight.queuedCycleDir;
+            paperFlight.queuedCycleDir = null;
+            if (queuedDir === "next" || queuedDir === "prev") beginCycle(queuedDir);
           }
         } else if (paperFlight.phase === "dismiss") {
           // Safety: ensure overlays are hidden while returning to the desk.
@@ -1106,6 +1293,11 @@ export default function ProjectsPage() {
       observer.disconnect();
       renderer.domElement.removeEventListener("mousemove", onMouseMove);
       renderer.domElement.removeEventListener("click", onClick);
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
@@ -1122,10 +1314,6 @@ export default function ProjectsPage() {
         visible={showDesktop}
         onBack={handleBack}
         onShutdown={handleShutdown}
-      />
-      <CertificateCarousel
-        isOpen={showCarousel}
-        onClose={() => setShowCarousel(false)}
       />
 
       {hoverLabel && (
