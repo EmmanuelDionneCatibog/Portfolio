@@ -3,6 +3,11 @@ import { useEffect, useRef } from "react";
 export default function GlitchOverlay({ active, onDone }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
+  const onDoneRef = useRef(onDone);
+
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => {
     if (!active) return;
@@ -155,13 +160,13 @@ export default function GlitchOverlay({ active, onDone }) {
         rafRef.current = requestAnimationFrame(draw);
       } else {
         ctx.clearRect(0, 0, w, h);
-        onDone();
+        onDoneRef.current?.();
       }
     };
 
     rafRef.current = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [active, onDone]);
+  }, [active]);
 
   return (
     <canvas
