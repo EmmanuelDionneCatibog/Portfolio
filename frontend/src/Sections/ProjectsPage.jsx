@@ -347,7 +347,7 @@ export default function ProjectsPage() {
     // Label anchors are in LOCAL scene space (before scale).
     // In the animation loop we scale them by `s` before projecting.
     const labelAnchorsLocal = {
-      laptop: new THREE.Vector3(0, 0, 0),
+      laptop: new THREE.Vector3(0, 0.4, 0),
       paper: new THREE.Vector3(-3, 0.4, 0.2),
       folder: new THREE.Vector3(3, 0.4, 0.6),
     };
