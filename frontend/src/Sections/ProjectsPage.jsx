@@ -252,13 +252,13 @@ export default function ProjectsPage() {
       };
     });
 
-    let paperHoverProgress = 0;
-    let folderHoverProgress = 0;
-    let paperFlight = null;
-    const PAPER_SHOOT_MS = 280;
-    const PAPER_RETURN_END_MS = 1040;
-    const PAPER_STAGGER_MS = 70;
-    const PAPER_FLOAT_HOLD_MS = 800;
+	    let paperHoverProgress = 0;
+	    let folderHoverProgress = 0;
+	    let paperFlight = null;
+	    const PAPER_SHOOT_MS = 280;
+	    const PAPER_RETURN_END_MS = 1040;
+	    const PAPER_STAGGER_MS = 70;
+	    const PAPER_FLOAT_HOLD_MS = 800;
 
     const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
     const easeInOutCubic = (x) =>
@@ -409,13 +409,13 @@ export default function ProjectsPage() {
       return 0;
     };
 
-    const onMouseMove = (event) => {
-      // Don't show hover outlines while the papers are flying / parked in front.
-      if (paperFlight) return;
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+	    const onMouseMove = (event) => {
+	      // Don't show hover outlines while the papers are flying / parked in front.
+	      if (paperFlight) return;
+	      const rect = renderer.domElement.getBoundingClientRect();
+	      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+	      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
+	      raycaster.setFromCamera(mouse, camera);
 
       const intersects = raycaster.intersectObjects([
         ...paperMeshes,
@@ -448,17 +448,17 @@ export default function ProjectsPage() {
       }
     };
 
-    const onClick = (event) => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
-      raycaster.setFromCamera(mouse, camera);
+	    const onClick = (event) => {
+	      const rect = renderer.domElement.getBoundingClientRect();
+	      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+	      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
+	      raycaster.setFromCamera(mouse, camera);
 
-      const paperHits = raycaster.intersectObjects(paperMeshes);
+	      const paperHits = raycaster.intersectObjects(paperMeshes);
 
-      // Keep papers in front until user clicks outside them.
-      // When dismissing, don't trigger any other click actions.
-      if (paperHits.length === 0 && paperFlight?.phase === "front") {
+	      // Keep papers in front until user clicks outside them.
+	      // When dismissing, don't trigger any other click actions.
+	      if (paperHits.length === 0 && paperFlight?.phase === "front") {
         // Hide certificates immediately when dismissing.
         paperFlight.papers.forEach((p) => {
           if (p.overlay) {
@@ -486,17 +486,17 @@ export default function ProjectsPage() {
         currentHovered = null;
         outlinePass.selectedObjects = [];
         labelPosRef.current = null;
-        setHoverLabel(null);
-        return;
-      }
+	        setHoverLabel(null);
+	        return;
+	      }
 
-      // While papers are active, block other click interactions (like laptop zoom).
-      if (paperFlight) return;
-      if (raycaster.intersectObjects(laptopMeshes).length > 0) {
-        const currentProgress = Math.max(
-          targetProgressRef.current,
-          scrollProgressRef.current,
-        );
+	      // While papers are active, block other click interactions (like laptop zoom).
+	      if (paperFlight) return;
+	      if (raycaster.intersectObjects(laptopMeshes).length > 0) {
+	        const currentProgress = Math.max(
+	          targetProgressRef.current,
+	          scrollProgressRef.current,
+	        );
 
         if (
           !showDesktopRef.current &&
@@ -586,9 +586,9 @@ export default function ProjectsPage() {
         renderer.domElement.style.cursor = "default";
         // Hide hover label ("CERTIFICATIONS") while papers are active.
         labelPosRef.current = null;
-        setHoverLabel(null);
-      }
-    };
+	        setHoverLabel(null);
+	      }
+	    };
 
     const finishCycleImmediate = () => {
       if (!paperFlight || paperFlight.phase !== "cycle") return false;
@@ -874,11 +874,11 @@ export default function ProjectsPage() {
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
 
-    const onWheel = (e) => {
-      if (paperFlight) {
-        e.preventDefault();
-        return;
-      }
+	    const onWheel = (e) => {
+	      if (paperFlight) {
+	        e.preventDefault();
+	        return;
+	      }
       if (isRestoringRef.current) return;
       if (isMidZoomAnimation()) {
         e.preventDefault();
@@ -909,11 +909,11 @@ export default function ProjectsPage() {
     const onTouchStart = (e) => {
       touchStartY = e.touches[0].clientY;
     };
-    const onTouchMove = (e) => {
-      if (paperFlight) {
-        e.preventDefault();
-        return;
-      }
+	    const onTouchMove = (e) => {
+	      if (paperFlight) {
+	        e.preventDefault();
+	        return;
+	      }
       if (isRestoringRef.current) return;
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
@@ -993,9 +993,9 @@ export default function ProjectsPage() {
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
 
-      // Paper "fly off left then pop back in front of camera"
-      if (paperFlight) {
-        const now = performance.now();
+	      // Paper "fly off left then pop back in front of camera"
+	      if (paperFlight) {
+	        const now = performance.now();
 
         const returnDur = PAPER_RETURN_END_MS - PAPER_SHOOT_MS;
 
@@ -1004,12 +1004,12 @@ export default function ProjectsPage() {
           ensureCertificateOverlays();
         } else if (paperFlight.phase === "enter") {
           let allDone = true;
-          paperFlight.papers.forEach((p, idx) => {
-            const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
-            if (elapsed <= 0) {
-              allDone = false;
-              return;
-            }
+	          paperFlight.papers.forEach((p, idx) => {
+	            const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
+	            if (elapsed <= 0) {
+	              allDone = false;
+	              return;
+	            }
 
             // Phase 1: shoot left (stack -> offscreen)
             if (elapsed < PAPER_SHOOT_MS) {
@@ -1216,14 +1216,14 @@ export default function ProjectsPage() {
         }
       }
 
-      // Ensure the "CERTIFICATIONS" hover label doesn't linger behind.
-      if (paperFlight && hoverLabel) setHoverLabel(null);
+	      // Ensure the "CERTIFICATIONS" hover label doesn't linger behind.
+	      if (paperFlight && hoverLabel) setHoverLabel(null);
 
-      // Folder hover
-      folderHoverProgress +=
-        ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
-      if (folderTopPivot)
-        folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
+	      // Folder hover
+	      folderHoverProgress +=
+	        ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
+	      if (folderTopPivot)
+	        folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
 
       composer.render();
 

@@ -162,13 +162,13 @@ export function createDeskScene(scene) {
     roughness: 0.75,
     map: deskLegWoodMap,
   });
-  const paperMats = [
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xf5f0e8, roughness: 0.9 }),
-  ];
+	  const paperMats = [
+	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
+	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
+	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
+	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
+	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
+	  ];
   const potMat = new THREE.MeshStandardMaterial({
     color: 0x8b4513,
     roughness: 0.8,
@@ -627,10 +627,10 @@ export function createDeskScene(scene) {
   const topInner = new THREE.Mesh(innerGeo, folderInnerMat);
   folderTopPivot.add(topInner);
 
-  const paperInsideMat = new THREE.MeshStandardMaterial({
-    color: 0xf5f0e8,
-    roughness: 0.9,
-  });
+	  const paperInsideMat = new THREE.MeshStandardMaterial({
+	    color: 0xffffff,
+	    roughness: 0.9,
+	  });
   const paperInside = box(
     fw - 0.3,
     0.002,
