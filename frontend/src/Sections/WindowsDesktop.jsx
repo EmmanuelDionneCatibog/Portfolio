@@ -7,6 +7,142 @@ import StickyNotesLayer, {
 } from "../Components/StickyNotesLayer";
 import { PROJECTS } from "./constants";
 
+function mulberry32(seed) {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hexToRgb(hex) {
+  const clean = hex.replace("#", "").trim();
+  const value = parseInt(
+    clean.length === 3 ? clean.replace(/(.)/g, "$1$1") : clean,
+    16,
+  );
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function mixRgb(a, b, t) {
+  const clamped = Math.max(0, Math.min(1, t));
+  const inv = 1 - clamped;
+  return {
+    r: Math.round(a.r * inv + b.r * clamped),
+    g: Math.round(a.g * inv + b.g * clamped),
+    b: Math.round(a.b * inv + b.b * clamped),
+  };
+}
+
+function rgbaStr(rgb, a) {
+  return `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
+}
+
+function LowPolyWallpaperSvg() {
+  const mesh = useMemo(() => {
+    const width = 100;
+    const height = 56.25; // 16:9
+    const cols = 14;
+    const rows = 8;
+    const cellW = width / cols;
+    const cellH = height / rows;
+    const jitter = Math.min(cellW, cellH) * 0.35;
+
+    const rand = mulberry32(13131);
+
+    const points = [];
+    for (let y = 0; y <= rows; y++) {
+      for (let x = 0; x <= cols; x++) {
+        const px =
+          x * cellW + (x > 0 && x < cols ? (rand() * 2 - 1) * jitter : 0);
+        const py =
+          y * cellH + (y > 0 && y < rows ? (rand() * 2 - 1) * jitter : 0);
+        points.push({ x: px, y: py });
+      }
+    }
+
+    const bg = hexToRgb("#13131c");
+    const deep = hexToRgb("#0b0f18");
+    const steel = hexToRgb("#25263a");
+    const accentOrange = hexToRgb("#db9834");
+    const sand = hexToRgb("#d7c6ac");
+    const amber = mixRgb(accentOrange, { r: 255, g: 210, b: 140 }, 0.55);
+
+    const hotspots = [
+      { x: width * 0.56, y: height * 0.52, c: amber, w: 1.0 },
+      { x: width * 0.28, y: height * 0.32, c: sand, w: 0.8 },
+      { x: width * 0.78, y: height * 0.32, c: steel, w: 0.75 },
+      { x: width * 0.18, y: height * 0.78, c: accentOrange, w: 0.75 },
+    ];
+
+    const idx = (x, y) => y * (cols + 1) + x;
+
+    const triangles = [];
+    for (let y = 0; y < rows; y++) {
+      for (let x = 0; x < cols; x++) {
+        const p00 = points[idx(x, y)];
+        const p10 = points[idx(x + 1, y)];
+        const p01 = points[idx(x, y + 1)];
+        const p11 = points[idx(x + 1, y + 1)];
+
+        const flip = rand() > 0.5;
+        const a = flip ? [p00, p10, p11] : [p00, p10, p01];
+        const b = flip ? [p00, p11, p01] : [p10, p11, p01];
+        triangles.push(a, b);
+      }
+    }
+
+    const colored = triangles.map((t) => {
+      const cx = (t[0].x + t[1].x + t[2].x) / 3;
+      const cy = (t[0].y + t[1].y + t[2].y) / 3;
+
+      let blend = deep;
+      let strength = 0;
+      for (const h of hotspots) {
+        const dx = cx - h.x;
+        const dy = cy - h.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const falloff =
+          Math.exp(-(d * d) / (2 * (width * 0.22) ** 2)) * h.w;
+        blend = mixRgb(blend, h.c, falloff);
+        strength += falloff;
+      }
+
+      const edgeDarken =
+        (Math.abs(cx - width / 2) / (width / 2) +
+          Math.abs(cy - height / 2) / (height / 2)) *
+        0.18;
+      const baseMix = 0.28 + Math.min(0.55, strength) - edgeDarken;
+      const fill = mixRgb(
+        bg,
+        blend,
+        Math.max(0.06, Math.min(0.75, baseMix)),
+      );
+
+      const pointsStr = `${t[0].x.toFixed(2)},${t[0].y.toFixed(2)} ${t[1].x.toFixed(2)},${t[1].y.toFixed(2)} ${t[2].x.toFixed(2)},${t[2].y.toFixed(2)}`;
+      return { pointsStr, fill: rgbaStr(fill, 1) };
+    });
+
+    return { width, height, colored };
+  }, []);
+
+  return (
+    <svg
+      className="wd-wallpaper-poly"
+      viewBox={`0 0 ${mesh.width} ${mesh.height}`}
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true">
+      <g>
+        {mesh.colored.map((t, i) => (
+          <polygon key={i} points={t.pointsStr} fill={t.fill} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 function TrayVolumeIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -563,11 +699,16 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           position: absolute;
           inset: 0;
           overflow: hidden;
-          background:
-            radial-gradient(circle at 18% 20%, rgba(219,152,52,0.18), transparent 30%),
-            radial-gradient(circle at 78% 22%, rgba(215,198,172,0.10), transparent 26%),
-            radial-gradient(circle at 60% 78%, rgba(219,152,52,0.10), transparent 34%),
-            linear-gradient(135deg, #0b0f18 0%, #13131c 38%, #1a1a2a 70%, #0b0f18 100%);
+          background: linear-gradient(135deg, #0b0f18 0%, #13131c 46%, #25263a 76%, #0b0f18 100%);
+        }
+        .wd-wallpaper-poly {
+          position: absolute;
+          inset: -6%;
+          width: 112%;
+          height: 112%;
+          opacity: 0.98;
+          transform: translate3d(0, 0, 0);
+          animation: wdPolyDrift 22s ease-in-out infinite alternate;
         }
         .wd-wallpaper::before,
         .wd-wallpaper::after {
@@ -578,11 +719,11 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         }
         .wd-wallpaper::before {
           background:
-            radial-gradient(circle at 20% 30%, rgba(219,152,52,0.16), transparent 22%),
-            radial-gradient(circle at 72% 26%, rgba(215,198,172,0.10), transparent 20%),
-            radial-gradient(circle at 56% 78%, rgba(219,152,52,0.12), transparent 24%);
+            radial-gradient(circle at 18% 24%, rgba(219,152,52,0.16), transparent 30%),
+            radial-gradient(circle at 76% 26%, rgba(215,198,172,0.10), transparent 28%),
+            radial-gradient(circle at 56% 78%, rgba(219,152,52,0.10), transparent 32%);
           filter: blur(18px);
-          animation: wdWallpaperFloat 18s ease-in-out infinite alternate;
+          opacity: 0.5;
         }
         .wd-wallpaper::after {
           background:
@@ -592,61 +733,6 @@ export default function WindowsDesktop({ visible, onShutdown }) {
           transform: translateX(-18%);
           animation: wdWallpaperSweep 14s linear infinite;
         }
-        .wd-wallpaper-grid,
-        .wd-wallpaper-orb,
-        .wd-wallpaper-glow {
-          position: absolute;
-          pointer-events: none;
-        }
-        .wd-wallpaper-grid {
-          inset: 0;
-          background-image:
-            linear-gradient(rgba(219,152,52,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(219,152,52,0.06) 1px, transparent 1px);
-          background-size: 48px 48px;
-          mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 82%);
-          opacity: 0.16;
-          animation: wdWallpaperGridDrift 24s linear infinite;
-        }
-        .wd-wallpaper-orb {
-          width: 34vw;
-          height: 34vw;
-          min-width: 260px;
-          min-height: 260px;
-          border-radius: 50%;
-          filter: blur(10px);
-          mix-blend-mode: screen;
-          opacity: 0.75;
-        }
-        .wd-wallpaper-orb.one {
-          top: -8vw;
-          right: -6vw;
-          background: radial-gradient(circle, rgba(219,152,52,0.28) 0%, rgba(219,152,52,0.07) 44%, transparent 72%);
-          animation: wdWallpaperOrbOne 20s ease-in-out infinite alternate;
-        }
-        .wd-wallpaper-orb.two {
-          left: -10vw;
-          bottom: -14vw;
-          background: radial-gradient(circle, rgba(215,198,172,0.18) 0%, rgba(215,198,172,0.05) 46%, transparent 74%);
-          animation: wdWallpaperOrbTwo 24s ease-in-out infinite alternate;
-        }
-        .wd-wallpaper-glow {
-          inset: auto 12% 12% auto;
-          width: 240px;
-          height: 240px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 66%);
-          filter: blur(6px);
-          animation: wdWallpaperPulse 8s ease-in-out infinite;
-        }
-        @keyframes wdWallpaperFloat {
-          from {
-            transform: translate3d(-2%, -1%, 0) scale(1);
-          }
-          to {
-            transform: translate3d(3%, 2%, 0) scale(1.08);
-          }
-        }
         @keyframes wdWallpaperSweep {
           from {
             transform: translateX(-22%);
@@ -655,39 +741,12 @@ export default function WindowsDesktop({ visible, onShutdown }) {
             transform: translateX(22%);
           }
         }
-        @keyframes wdWallpaperGridDrift {
+        @keyframes wdPolyDrift {
           from {
-            transform: translate3d(0, 0, 0);
+            transform: translate3d(-0.7%, -0.4%, 0) scale(1.01);
           }
           to {
-            transform: translate3d(48px, 24px, 0);
-          }
-        }
-        @keyframes wdWallpaperOrbOne {
-          from {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          to {
-            transform: translate3d(-4vw, 3vw, 0) scale(1.08);
-          }
-        }
-        @keyframes wdWallpaperOrbTwo {
-          from {
-            transform: translate3d(0, 0, 0) scale(1);
-          }
-          to {
-            transform: translate3d(5vw, -4vw, 0) scale(1.1);
-          }
-        }
-        @keyframes wdWallpaperPulse {
-          0%,
-          100% {
-            opacity: 0.4;
-            transform: scale(0.96);
-          }
-          50% {
-            opacity: 0.72;
-            transform: scale(1.08);
+            transform: translate3d(0.6%, 0.5%, 0) scale(1.03);
           }
         }
         .wd-taskbar {
@@ -1113,10 +1172,7 @@ export default function WindowsDesktop({ visible, onShutdown }) {
         }}>
         <div
           className="wd-wallpaper">
-          <div className="wd-wallpaper-grid" />
-          <div className="wd-wallpaper-orb one" />
-          <div className="wd-wallpaper-orb two" />
-          <div className="wd-wallpaper-glow" />
+          <LowPolyWallpaperSvg />
         </div>
 
         <div className="wd-icons-col" onClick={(e) => e.stopPropagation()}>
