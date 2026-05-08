@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { smoothScrollToId } from "../utils/smoothScroll";
 
 export default function NavBar() {
+  const navRef = useRef(null);
+
   const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth" });
+    const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
+    smoothScrollToId(id, { durationMs: 750, offsetPx: navHeight });
   };
 
   const [visible, setVisible] = useState(true);
@@ -125,6 +128,7 @@ export default function NavBar() {
       `}</style>
 
       <nav
+        ref={navRef}
         className="site-nav"
         style={{
           transform: visible ? "translateY(0)" : "translateY(-100%)",
