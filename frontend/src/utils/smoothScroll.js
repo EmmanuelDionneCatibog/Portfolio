@@ -8,10 +8,9 @@ const getScrollTop = () =>
   0;
 
 const setScrollTop = (top) => {
-  // Assign directly to avoid interaction with CSS `scroll-behavior: smooth`
-  // (which can cause RAF-driven animations to restart/jump).
-  document.documentElement.scrollTop = top;
-  document.body.scrollTop = top;
+  // Use explicit "auto" behavior so CSS `scroll-behavior: smooth` can't
+  // interfere with our RAF-driven animation (double-smoothing can jitter).
+  window.scrollTo({ top, left: 0, behavior: "auto" });
 };
 
 export function animateWindowScrollTo(targetTop, durationMs) {
@@ -21,17 +20,35 @@ export function animateWindowScrollTo(targetTop, durationMs) {
 
   const startTime = performance.now();
   let raf = 0;
+  const root = document.documentElement;
+  const prevScrollBehavior = root.style.scrollBehavior;
+  let restored = false;
+  const restoreScrollBehavior = () => {
+    if (restored) return;
+    root.style.scrollBehavior = prevScrollBehavior;
+    restored = true;
+  };
+
+  // Ensure CSS smooth-scrolling doesn't fight this animation.
+  root.style.scrollBehavior = "auto";
 
   const tick = (now) => {
     const elapsed = now - startTime;
     const t = Math.min(1, elapsed / durationMs);
     const eased = easeInOutCubic(t);
     setScrollTop(startTop + delta * eased);
-    if (t < 1) raf = window.requestAnimationFrame(tick);
+    if (t < 1) {
+      raf = window.requestAnimationFrame(tick);
+    } else {
+      restoreScrollBehavior();
+    }
   };
 
   raf = window.requestAnimationFrame(tick);
-  return () => window.cancelAnimationFrame(raf);
+  return () => {
+    window.cancelAnimationFrame(raf);
+    restoreScrollBehavior();
+  };
 }
 
 export function smoothScrollToId(id, { durationMs = 750, offsetPx = 0 } = {}) {

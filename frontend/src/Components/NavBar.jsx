@@ -3,9 +3,13 @@ import { smoothScrollToId } from "../utils/smoothScroll";
 
 export default function NavBar() {
   const navRef = useRef(null);
+  const suppressAutoHideUntil = useRef(0);
 
   const scrollTo = (id) => {
     const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
+    suppressAutoHideUntil.current = performance.now() + 850;
+    setVisible(true);
+    lastScrollY.current = window.scrollY;
     smoothScrollToId(id, { durationMs: 750, offsetPx: navHeight });
   };
 
@@ -13,7 +17,14 @@ export default function NavBar() {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
+    lastScrollY.current = window.scrollY;
+
     const onScroll = () => {
+      if (performance.now() < suppressAutoHideUntil.current) {
+        lastScrollY.current = window.scrollY;
+        return;
+      }
+
       const current = window.scrollY;
       // Always show at top of page
       if (current < 60) {
@@ -133,9 +144,7 @@ export default function NavBar() {
         style={{
           transform: visible ? "translateY(0)" : "translateY(-100%)",
         }}>
-        <button
-          onClick={() => scrollTo("home")}
-          className="site-nav-brand">
+        <button onClick={() => scrollTo("home")} className="site-nav-brand">
           DC
         </button>
 
