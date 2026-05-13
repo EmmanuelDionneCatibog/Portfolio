@@ -4,7 +4,6 @@ import { smoothScrollToId } from "../utils/smoothScroll";
 export default function NavBar() {
   const navRef = useRef(null);
   const suppressAutoHideUntil = useRef(0);
-  const [activeId, setActiveId] = useState("");
 
   const scrollTo = (id) => {
     const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
@@ -14,7 +13,6 @@ export default function NavBar() {
     smoothScrollToId(id, { durationMs: 750, offsetPx: navHeight });
     // Keep URL in sync without triggering App's hashchange scroll again.
     if (id) window.history.replaceState(null, "", `#${id}`);
-    setActiveId(id);
   };
 
   const [visible, setVisible] = useState(true);
@@ -44,38 +42,6 @@ export default function NavBar() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    const ids = ["about", "projects", "contact"];
-    const sections = ids
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    const fromHash = window.location.hash.replace("#", "");
-    if (fromHash) setActiveId(fromHash);
-
-    if (!sections.length) return;
-
-    const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0));
-        const top = visibleEntries[0];
-        if (top?.target?.id) setActiveId(top.target.id);
-      },
-      {
-        // Treat the area below the navbar as "top of viewport" for section detection.
-        root: null,
-        threshold: [0.25, 0.5, 0.75],
-        rootMargin: `-${Math.ceil(navHeight + 1)}px 0px -55% 0px`,
-      }
-    );
-
-    sections.forEach((s) => observer.observe(s));
-    return () => observer.disconnect();
   }, []);
 
   return (
@@ -139,8 +105,6 @@ export default function NavBar() {
         }
         .nav-link:hover::before { width: 100%; }
         .nav-link:hover { color: #db9834; transition: color 0.35s ease; }
-        .nav-link.active { color: #db9834; }
-        .nav-link.active::before { width: 100%; }
         @media (max-width: 640px) {
           .site-nav {
             padding: 12px 16px;
@@ -195,7 +159,7 @@ export default function NavBar() {
             <button
               key={id}
               onClick={() => scrollTo(id)}
-              className={`nav-link${activeId === id ? " active" : ""}`}>
+              className="nav-link">
               {label}
             </button>
           ))}
