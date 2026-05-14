@@ -1,5 +1,115 @@
 import * as THREE from "three";
 
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+const brighten = (hex, deltaL) => {
+  const c = new THREE.Color(hex);
+  c.offsetHSL(0, 0, deltaL);
+  return c;
+};
+
+const makeBookCoverTexture = ({
+  baseColor,
+  seed = Math.random() * 1e9,
+  w = 96,
+  h = 256,
+}) => {
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+
+  const base = new THREE.Color(baseColor);
+  const accent = base.clone().offsetHSL(0, -0.08, 0.12);
+  const accent2 = base.clone().offsetHSL(0, -0.06, 0.06);
+
+  // Subtle vertical lighting gradient (gives "roundness").
+  const top = brighten(baseColor, 0.08);
+  const mid = new THREE.Color(baseColor);
+  const bot = brighten(baseColor, -0.08);
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, `#${top.getHexString()}`);
+  grad.addColorStop(0.5, `#${mid.getHexString()}`);
+  grad.addColorStop(1, `#${bot.getHexString()}`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  // Edge vignette to pop silhouette a bit.
+  const edge = ctx.createLinearGradient(0, 0, w, 0);
+  edge.addColorStop(0, "rgba(0,0,0,0.22)");
+  edge.addColorStop(0.12, "rgba(0,0,0,0.0)");
+  edge.addColorStop(0.88, "rgba(0,0,0,0.0)");
+  edge.addColorStop(
+    1,
+    `rgba(${Math.round(accent.r * 255)},${Math.round(accent.g * 255)},${Math.round(accent.b * 255)},0.07)`,
+  );
+  ctx.fillStyle = edge;
+  ctx.fillRect(0, 0, w, h);
+
+  // Small title band + thin lines (simple detail).
+  const bandY = Math.floor(h * (0.18 + ((seed % 1000) / 1000) * 0.55));
+  const bandH = Math.floor(h * 0.12);
+  ctx.fillStyle = `rgba(${Math.round(accent2.r * 255)},${Math.round(accent2.g * 255)},${Math.round(accent2.b * 255)},0.18)`;
+  ctx.fillRect(0, bandY, w, bandH);
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.fillRect(0, bandY - 1, w, 1);
+  ctx.fillRect(0, bandY + bandH, w, 1);
+
+  // Fine noise/grain (texture so it doesn't look flat).
+  const noise = ctx.getImageData(0, 0, w, h);
+  const data = noise.data;
+  let s = seed | 0;
+  const rand = () => {
+    // xorshift32
+    s ^= s << 13;
+    s ^= s >> 17;
+    s ^= s << 5;
+    return (s >>> 0) / 4294967296;
+  };
+  for (let i = 0; i < data.length; i += 4) {
+    const n = (rand() - 0.5) * 28; // [-14..14]
+    data[i] = clamp01((data[i] + n) / 255) * 255;
+    data[i + 1] = clamp01((data[i + 1] + n) / 255) * 255;
+    data[i + 2] = clamp01((data[i + 2] + n) / 255) * 255;
+    // alpha unchanged
+  }
+  ctx.putImageData(noise, 0, 0);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  return tex;
+};
+
+const makeBookMaterials = ({ baseColor, seed }) => {
+  const coverTex = makeBookCoverTexture({ baseColor, seed });
+
+  const pagesColor = brighten(baseColor, -0.22).getHex();
+  const pagesMat = new THREE.MeshStandardMaterial({
+    color: pagesColor,
+    roughness: 0.95,
+    metalness: 0,
+  });
+
+  const backMat = new THREE.MeshStandardMaterial({
+    color: brighten(baseColor, -0.12).getHex(),
+    roughness: 0.9,
+    metalness: 0.02,
+  });
+
+  const coverMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    map: coverTex,
+    roughness: 0.7,
+    metalness: 0.05,
+  });
+
+  // BoxGeometry groups: +x, -x, +y, -y, +z, -z
+  // We want the visible "spine/cover" to face the camera (+z).
+  return [pagesMat, pagesMat, pagesMat, pagesMat, coverMat, backMat];
+};
+
 const box = (
   gw,
   gh,
@@ -216,10 +326,9 @@ export function createRoomScene(scene) {
         const tilt = (Math.random() - 0.5) * 0.08;
         const bookColor = getRandomBookColor(lastColor);
         lastColor = bookColor;
-        const bMat = new THREE.MeshStandardMaterial({
-          color: bookColor,
-          roughness: 0.8,
-        });
+        const seed =
+          (si + 1) * 100000 + b * 97 + Math.floor(Math.random() * 1e6);
+        const bMat = makeBookMaterials({ baseColor: bookColor, seed });
         const book = box(
           bw - 0.015,
           bh,
@@ -233,21 +342,26 @@ export function createRoomScene(scene) {
           tilt,
         );
         bookshelf.add(book);
-        const spineMat = new THREE.MeshStandardMaterial({
-          color: 0xffffff,
-          roughness: 0.9,
+
+        // Soft highlight strip on the visible face so books feel less "flat".
+        const highlightColor = brighten(bookColor, 0.18).getHex();
+        const highlightMat = new THREE.MeshStandardMaterial({
+          color: highlightColor,
+          roughness: 0.2,
+          metalness: 0,
           transparent: true,
-          opacity: 0.18,
+          opacity: 0.08,
+          depthWrite: false,
         });
         bookshelf.add(
           box(
-            bw - 0.015,
-            0.04,
-            0.01,
-            spineMat,
-            xCursor + bw / 2,
-            sy + bh * 0.7,
-            -0.36,
+            Math.min(0.03, Math.max(0.016, (bw - 0.015) * 0.22)),
+            bh * 0.88,
+            0.006,
+            highlightMat,
+            xCursor + bw / 2 - (bw - 0.015) * 0.28,
+            sy + bh / 2,
+            0.36 + 0.004,
           ),
         );
         xCursor += bw + 0.015;

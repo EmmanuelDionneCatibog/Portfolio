@@ -93,6 +93,12 @@ export default function ProjectsPage() {
 
   const cyclePapersRef = useRef(null);
 
+  const [panMode, setPanMode] = useState(false);
+  const panModeRef = useRef(false);
+  useEffect(() => {
+    panModeRef.current = panMode;
+  }, [panMode]);
+
   const triggerGlitch = () => {
     if (glitchFiredRef.current || isRestoringRef.current) return;
     glitchFiredRef.current = true;
@@ -221,6 +227,67 @@ export default function ProjectsPage() {
 
     // Enable pointer-driven dragging on touch devices (avoid native panning).
     renderer.domElement.style.touchAction = "none";
+
+    // Optional free-look (fixed-position) controls (toggled by the eye icon)
+    const freeLook = {
+      enabled: false,
+      yaw: 0,
+      pitch: 0,
+      startYaw: 0,
+      startPitch: 0,
+      dragging: false,
+      startX: 0,
+      startY: 0,
+      startFov: camera.fov,
+    };
+
+    const syncFreeLookFromCamera = () => {
+      const e = new THREE.Euler().setFromQuaternion(camera.quaternion, "YXZ");
+      freeLook.yaw = e.y;
+      freeLook.pitch = e.x;
+      freeLook.startFov = camera.fov;
+    };
+
+    const applyFreeLookToCamera = () => {
+      const maxPitch = Math.PI / 2 - 0.06;
+      freeLook.pitch = Math.max(-maxPitch, Math.min(maxPitch, freeLook.pitch));
+      camera.rotation.order = "YXZ";
+      camera.rotation.y = freeLook.yaw;
+      camera.rotation.x = freeLook.pitch;
+    };
+
+    const onFreeLookPointerDown = (e) => {
+      if (!freeLook.enabled) return;
+      freeLook.dragging = true;
+      freeLook.startX = e.clientX;
+      freeLook.startY = e.clientY;
+      freeLook.startYaw = freeLook.yaw;
+      freeLook.startPitch = freeLook.pitch;
+      renderer.domElement.setPointerCapture?.(e.pointerId);
+    };
+
+    const onFreeLookPointerMove = (e) => {
+      if (!freeLook.enabled || !freeLook.dragging) return;
+      const dx = e.clientX - freeLook.startX;
+      const dy = e.clientY - freeLook.startY;
+      const sensitivity = 0.0032;
+      freeLook.yaw = freeLook.startYaw - dx * sensitivity;
+      freeLook.pitch = freeLook.startPitch - dy * sensitivity;
+      applyFreeLookToCamera();
+    };
+
+    const onFreeLookPointerUp = () => {
+      if (!freeLook.enabled) return;
+      freeLook.dragging = false;
+    };
+
+    const onFreeLookWheel = (e) => {
+      if (!freeLook.enabled) return;
+      e.preventDefault();
+      const next = camera.fov + Math.sign(e.deltaY) * 2.5;
+      camera.fov = Math.max(26, Math.min(78, next));
+      camera.updateProjectionMatrix();
+    };
 
     // Mesh collections for hover / raycasting
     const paperMeshes = [];
@@ -410,6 +477,7 @@ export default function ProjectsPage() {
     };
 
 	    const onMouseMove = (event) => {
+	      if (panModeRef.current) return;
 	      // Don't show hover outlines while the papers are flying / parked in front.
 	      if (paperFlight) return;
 	      const rect = renderer.domElement.getBoundingClientRect();
@@ -449,6 +517,7 @@ export default function ProjectsPage() {
     };
 
 	    const onClick = (event) => {
+	      if (panModeRef.current) return;
 	      const rect = renderer.domElement.getBoundingClientRect();
 	      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
 	      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
@@ -685,6 +754,7 @@ export default function ProjectsPage() {
     };
 
     const onPointerDown = (event) => {
+      if (panModeRef.current) return;
       // Only enforce mouse-button checks for actual mouse pointers.
       if (event.pointerType === "mouse" && event.button !== 0) return;
       if (!paperFlight) return;
@@ -724,6 +794,7 @@ export default function ProjectsPage() {
     };
 
     const onPointerMove = (event) => {
+      if (panModeRef.current) return;
       if (!dragState.active) return;
       if (!paperFlight) return;
       if (!dragState.paper) return;
@@ -875,6 +946,7 @@ export default function ProjectsPage() {
     if (sectionRef.current) observer.observe(sectionRef.current);
 
 	    const onWheel = (e) => {
+	      if (panModeRef.current) return;
 	      if (paperFlight) {
 	        e.preventDefault();
 	        return;
@@ -907,9 +979,11 @@ export default function ProjectsPage() {
 
     let touchStartY = 0;
     const onTouchStart = (e) => {
+      if (panModeRef.current) return;
       touchStartY = e.touches[0].clientY;
     };
 	    const onTouchMove = (e) => {
+	      if (panModeRef.current) return;
 	      if (paperFlight) {
 	        e.preventDefault();
 	        return;
@@ -942,9 +1016,42 @@ export default function ProjectsPage() {
 
     let raf,
       t = 0;
+    let restoreAnim = null;
+    const RESTORE_MS = 520;
     const animate = () => {
       raf = requestAnimationFrame(animate);
       t += 0.008;
+
+      // Keep free-look in sync with UI toggle; when enabled, user drives camera.
+      const nextEnabled = !!panModeRef.current;
+      if (freeLook.enabled !== nextEnabled) {
+        if (freeLook.enabled && !nextEnabled) {
+          restoreAnim = {
+            startAt: performance.now(),
+            fromPos: camera.position.clone(),
+            fromQuat: camera.quaternion.clone(),
+            fromFov: camera.fov,
+          };
+        }
+        freeLook.enabled = nextEnabled;
+        if (freeLook.enabled) {
+          syncFreeLookFromCamera();
+          renderer.domElement.addEventListener("pointerdown", onFreeLookPointerDown);
+          renderer.domElement.addEventListener("pointermove", onFreeLookPointerMove);
+          renderer.domElement.addEventListener("pointerup", onFreeLookPointerUp);
+          renderer.domElement.addEventListener("pointercancel", onFreeLookPointerUp);
+          renderer.domElement.addEventListener("wheel", onFreeLookWheel, {
+            passive: false,
+          });
+        } else {
+          freeLook.dragging = false;
+          renderer.domElement.removeEventListener("pointerdown", onFreeLookPointerDown);
+          renderer.domElement.removeEventListener("pointermove", onFreeLookPointerMove);
+          renderer.domElement.removeEventListener("pointerup", onFreeLookPointerUp);
+          renderer.domElement.removeEventListener("pointercancel", onFreeLookPointerUp);
+          renderer.domElement.removeEventListener("wheel", onFreeLookWheel);
+        }
+      }
 
       checkZoomOut();
       if (zoomAnimation) {
@@ -965,18 +1072,44 @@ export default function ProjectsPage() {
       applyProgress(scrollProgress);
 
       // Camera uses live refs — always correct after a resize
-      camera.position.lerpVectors(
-        camStartRef.current,
-        camEndRef.current,
-        scrollProgress,
-      );
-      camera.lookAt(
-        new THREE.Vector3().lerpVectors(
-          lookStartRef.current,
-          lookEndRef.current,
-          scrollProgress,
-        ),
-      );
+      if (!freeLook.enabled) {
+        if (restoreAnim) {
+          const now = performance.now();
+          const raw = Math.min(1, (now - restoreAnim.startAt) / RESTORE_MS);
+          const eased = easeOutCubic(raw);
+          const toPos = new THREE.Vector3().lerpVectors(
+            camStartRef.current,
+            camEndRef.current,
+            scrollProgress,
+          );
+          const toTarget = new THREE.Vector3().lerpVectors(
+            lookStartRef.current,
+            lookEndRef.current,
+            scrollProgress,
+          );
+          camera.position.lerpVectors(restoreAnim.fromPos, toPos, eased);
+          const qTo = new THREE.Quaternion().setFromRotationMatrix(
+            new THREE.Matrix4().lookAt(toPos, toTarget, camera.up),
+          );
+          camera.quaternion.copy(restoreAnim.fromQuat).slerp(qTo, eased);
+          camera.fov = restoreAnim.fromFov + (getFov(w, h) - restoreAnim.fromFov) * eased;
+          camera.updateProjectionMatrix();
+          if (raw >= 1) restoreAnim = null;
+        } else {
+          camera.position.lerpVectors(
+            camStartRef.current,
+            camEndRef.current,
+            scrollProgress,
+          );
+          camera.lookAt(
+            new THREE.Vector3().lerpVectors(
+              lookStartRef.current,
+              lookEndRef.current,
+              scrollProgress,
+            ),
+          );
+        }
+      }
 
       if (lampLight) lampLight.intensity = 2.4 + Math.sin(t * 1.8) * 0.2;
 
@@ -1295,6 +1428,14 @@ export default function ProjectsPage() {
       renderer.domElement.removeEventListener("click", onClick);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
+      renderer.domElement.removeEventListener("pointerdown", onFreeLookPointerDown);
+      renderer.domElement.removeEventListener("pointermove", onFreeLookPointerMove);
+      renderer.domElement.removeEventListener("pointerup", onFreeLookPointerUp);
+      renderer.domElement.removeEventListener(
+        "pointercancel",
+        onFreeLookPointerUp,
+      );
+      renderer.domElement.removeEventListener("wheel", onFreeLookWheel);
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", endDrag);
       window.removeEventListener("pointercancel", endDrag);
@@ -1391,6 +1532,30 @@ export default function ProjectsPage() {
       )}
 
       <div ref={sectionRef} className="projects-page-section">
+        <button
+          type="button"
+          className={`projects-pan-toggle ${panMode ? "is-active" : ""}`}
+          aria-label={panMode ? "Disable free look" : "Enable free look"}
+          aria-pressed={panMode}
+          onClick={() => setPanMode((v) => !v)}>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true">
+            <path
+              d="M2.25 12s3.5-7.25 9.75-7.25S21.75 12 21.75 12 18.25 19.25 12 19.25 2.25 12 2.25 12Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+            />
+          </svg>
+        </button>
         <div ref={mountRef} className="projects-page-canvas" />
       </div>
     </>
