@@ -33,6 +33,7 @@ const CAM_START_FULL = new THREE.Vector3(0, 3.05, 7.35);
 const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
 const CAM_END_FULL = new THREE.Vector3(0, 1.6, 0.62);
 const LOOK_END_FULL = new THREE.Vector3(0, 1.5, -1.28);
+const LAYOUT_OFFSET_X = -5.4;
 const ZOOM_STAGE_PREVIEW = 0.3;
 const ZOOM_STAGE_DESKTOP = 1;
 
@@ -43,21 +44,24 @@ function buildCameraPath(width, height) {
   const cameraLift = compactHeight ? 0.16 + (720 - height) / 2200 : 0;
   const cameraPull = compactWidth ? (768 - width) / 420 : 0;
   const lookLift = compactHeight ? 0.08 + (720 - height) / 3200 : 0;
+  const offset = new THREE.Vector3(LAYOUT_OFFSET_X * s, 0, 0);
 
   return {
     camStart: CAM_START_FULL.clone()
       .multiplyScalar(s)
+      .add(offset)
       .add(new THREE.Vector3(0, cameraLift, cameraPull)),
     lookStart: LOOK_START_FULL.clone()
       .multiplyScalar(s)
+      .add(offset)
       .add(new THREE.Vector3(0, lookLift, 0)),
     camEnd: new THREE.Vector3(
-      0,
+      offset.x,
       CAM_END_FULL.y * s + cameraLift * 0.2,
       CAM_END_FULL.z * s + cameraPull * 0.08,
     ),
     lookEnd: new THREE.Vector3(
-      0,
+      offset.x,
       LOOK_END_FULL.y * s + lookLift * 0.18,
       LOOK_END_FULL.z * s,
     ),
@@ -178,6 +182,7 @@ export default function ProjectsPage() {
     } = createDeskScene(scene);
 
     const { roomRoot } = createRoomScene(scene);
+    deskRoot.position.x = LAYOUT_OFFSET_X;
 
     const applySceneScale = (width, height) => {
       const s = getSceneScale(width, height);

@@ -153,11 +153,28 @@ const cyl = (
 
 export function createRoomScene(scene) {
   const DESK_Y = 0;
+  const DESK_X = -5.4;
   const floorY = DESK_Y - 0.09 - 2.8;
   const wallH = 10;
   const wallW = 24;
   const wallD = 20;
+  // Room layout (matches the top-down sketch):
+  // - Back wall close behind the computer area
+  // - Deep room extending forward to the door/cabinet
   const backWallZ = -2.1;
+  const frontWallZ = backWallZ + wallD;
+  const roomCenterZ = (backWallZ + frontWallZ) / 2;
+
+  const makeRng = (seed) => {
+    let s = seed | 0;
+    return () => {
+      // xorshift32
+      s ^= s << 13;
+      s ^= s >> 17;
+      s ^= s << 5;
+      return (s >>> 0) / 4294967296;
+    };
+  };
 
   // Root group so the whole room can be scaled uniformly
   const roomRoot = new THREE.Group();
@@ -170,6 +187,7 @@ export function createRoomScene(scene) {
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = DESK_Y - 0.09 - 2.8;
+  floor.position.z = roomCenterZ;
   floor.receiveShadow = true;
   roomRoot.add(floor);
 
@@ -192,7 +210,7 @@ export function createRoomScene(scene) {
     wallMat,
   );
   leftWall.rotation.y = Math.PI / 2;
-  leftWall.position.set(-wallW / 2, floorY + wallH / 2, 0);
+  leftWall.position.set(-wallW / 2, floorY + wallH / 2, roomCenterZ);
   leftWall.receiveShadow = true;
   roomRoot.add(leftWall);
 
@@ -201,9 +219,33 @@ export function createRoomScene(scene) {
     wallMat,
   );
   rightWall.rotation.y = -Math.PI / 2;
-  rightWall.position.set(wallW / 2, floorY + wallH / 2, 0);
+  rightWall.position.set(wallW / 2, floorY + wallH / 2, roomCenterZ);
   rightWall.receiveShadow = true;
   roomRoot.add(rightWall);
+
+  // Close the room when the camera turns around.
+  const frontWall = new THREE.Mesh(
+    new THREE.PlaneGeometry(wallW, wallH),
+    wallMat,
+  );
+  frontWall.rotation.y = Math.PI;
+  frontWall.position.set(0, floorY + wallH / 2, frontWallZ);
+  frontWall.receiveShadow = true;
+  roomRoot.add(frontWall);
+
+  const ceiling = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 30),
+    new THREE.MeshStandardMaterial({
+      color: 0x141422,
+      roughness: 1,
+      side: THREE.DoubleSide,
+    }),
+  );
+  ceiling.rotation.x = Math.PI / 2;
+  ceiling.position.y = floorY + wallH;
+  ceiling.position.z = roomCenterZ;
+  ceiling.receiveShadow = true;
+  roomRoot.add(ceiling);
 
   // ─── Grid lines ──────────────────────────────────────────────────────────
   const fadedLineMat = new THREE.MeshBasicMaterial({
@@ -223,26 +265,42 @@ export function createRoomScene(scene) {
     wallLine(0.025, wallH, 0.01, i * 2.5, floorY + wallH / 2, bwZ);
   const lwX = -wallW / 2 + 0.02;
   for (let i = 0; i < 5; i++)
-    wallLine(0.01, 0.025, wallD, lwX, floorY + 1.5 + i * 1.6, 0);
+    wallLine(0.01, 0.025, wallD, lwX, floorY + 1.5 + i * 1.6, roomCenterZ);
   for (let i = -3; i <= 3; i++)
-    wallLine(0.01, wallH, 0.025, lwX, floorY + wallH / 2, i * 2.8);
+    wallLine(
+      0.01,
+      wallH,
+      0.025,
+      lwX,
+      floorY + wallH / 2,
+      roomCenterZ + i * 2.8,
+    );
   const rwX = wallW / 2 - 0.02;
   for (let i = 0; i < 5; i++)
-    wallLine(0.01, 0.025, wallD, rwX, floorY + 1.5 + i * 1.6, 0);
+    wallLine(0.01, 0.025, wallD, rwX, floorY + 1.5 + i * 1.6, roomCenterZ);
   for (let i = -3; i <= 3; i++)
-    wallLine(0.01, wallH, 0.025, rwX, floorY + wallH / 2, i * 2.8);
+    wallLine(
+      0.01,
+      wallH,
+      0.025,
+      rwX,
+      floorY + wallH / 2,
+      roomCenterZ + i * 2.8,
+    );
 
   const floorGridMat = new THREE.MeshBasicMaterial({
     color: 0xdb9834,
     transparent: true,
     opacity: 0.12,
   });
-  for (let i = -3; i <= 3; i++) {
+  for (let i = 0; i <= Math.floor(wallD / 2.8); i++) {
+    const z = backWallZ + 1.4 + i * 2.8;
+    if (z > frontWallZ - 1.2) break;
     const m = new THREE.Mesh(
       new THREE.BoxGeometry(wallW, 0.01, 0.025),
       floorGridMat,
     );
-    m.position.set(0, floorY + 0.005, i * 2.8);
+    m.position.set(0, floorY + 0.005, z);
     roomRoot.add(m);
   }
   for (let i = -4; i <= 4; i++) {
@@ -250,8 +308,118 @@ export function createRoomScene(scene) {
       new THREE.BoxGeometry(0.025, 0.01, wallD),
       floorGridMat,
     );
-    m.position.set(i * 2.5, floorY + 0.005, 0);
+    m.position.set(i * 2.5, floorY + 0.005, roomCenterZ);
     roomRoot.add(m);
+  }
+
+  // ─── Furniture + extra detail (fills out the room) ────────────────────────
+  {
+    // Door on the front wall
+    const doorGroup = new THREE.Group();
+    doorGroup.position.set(9.9, floorY + 2.35, frontWallZ - 0.06);
+    roomRoot.add(doorGroup);
+
+    const doorFrameMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2a3c,
+      roughness: 0.8,
+      metalness: 0.1,
+    });
+    const doorMat = new THREE.MeshStandardMaterial({
+      color: 0x5a3a1a,
+      roughness: 0.75,
+      metalness: 0.05,
+    });
+    const knobMat = new THREE.MeshStandardMaterial({
+      color: 0xd6a34a,
+      roughness: 0.25,
+      metalness: 0.85,
+    });
+
+    doorGroup.add(box(2.32, 4.96, 0.12, doorFrameMat, 0, 0, -0.03));
+    doorGroup.add(box(2.08, 4.72, 0.1, doorMat, 0, 0, 0));
+    // Simple inset panels
+    doorGroup.add(box(1.6, 1.4, 0.04, doorFrameMat, 0, 1.1, 0.055));
+    doorGroup.add(box(1.6, 1.6, 0.04, doorFrameMat, 0, -0.9, 0.055));
+    doorGroup.add(
+      cyl(0.07, 0.07, 0.18, 14, knobMat, 0.78, -0.15, 0.07, 0, 0, Math.PI / 2),
+    );
+
+    // Bed against the left wall (rotated CCW)
+    const BED_W = 7.4;
+    const BED_L = 10.2;
+    const bedGroup = new THREE.Group();
+    bedGroup.rotation.y = Math.PI / 2;
+    bedGroup.position.set(
+      -wallW / 2 + BED_L / 2 + 0.18,
+      floorY,
+      backWallZ + 11,
+    );
+    roomRoot.add(bedGroup);
+
+    const bedFrameMat = new THREE.MeshStandardMaterial({
+      color: 0x2b1a0d,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+    const sheetMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.95,
+    });
+    const pillowMat = new THREE.MeshStandardMaterial({
+      color: 0xe8edf6,
+      roughness: 0.9,
+    });
+
+    bedGroup.add(box(BED_W, 0.36, BED_L, bedFrameMat, 0, 0.18, 0));
+    bedGroup.add(
+      box(BED_W - 0.35, 0.42, BED_L - 0.35, sheetMat, 0, 0.58, -0.04),
+    );
+    bedGroup.add(box(BED_W, 1.4, 0.22, bedFrameMat, 0, 0.92, -BED_L / 2 + 0.2)); // headboard
+    bedGroup.add(
+      box(
+        2.6,
+        0.25,
+        1.2,
+        pillowMat,
+        -1.55,
+        0.84,
+        -BED_L / 2 + 1.35,
+        0.02,
+        0.08,
+        0,
+      ),
+    );
+    bedGroup.add(
+      box(
+        2.6,
+        0.25,
+        1.2,
+        pillowMat,
+        1.55,
+        0.84,
+        -BED_L / 2 + 1.35,
+        -0.02,
+        -0.06,
+        0,
+      ),
+    );
+    bedGroup.add(
+      box(BED_W - 0.4, 0.18, 3.9, sheetMat, 0, 0.85, 2.2, 0.03, 0, 0),
+    );
+
+    // Rug to break up the floor (under bed zone)
+    const rug = new THREE.Mesh(
+      new THREE.PlaneGeometry(10.5, 6.8),
+      new THREE.MeshStandardMaterial({
+        color: 0x1a0f0f,
+        roughness: 1,
+        metalness: 0,
+      }),
+    );
+    rug.rotation.x = -Math.PI / 2;
+    rug.position.set(-wallW / 2 + 5.6, floorY + 0.008, backWallZ + 11);
+    rug.receiveShadow = true;
+    roomRoot.add(rug);
   }
 
   // ── Bookshelf on left wall ───────────────────────────────────────────────
@@ -296,7 +464,6 @@ export function createRoomScene(scene) {
   }) => {
     const bookshelf = new THREE.Group();
     bookshelf.position.set(x, floorY, z);
-    if (mirror) bookshelf.scale.x = -1;
     roomRoot.add(bookshelf);
 
     bookshelf.add(box(0.12, 4.0, 1.8, shelfMat, -0.96, 2.0, 0));
@@ -317,17 +484,56 @@ export function createRoomScene(scene) {
     };
 
     shelfLevels.forEach((sy, si) => {
-      let xCursor = -0.85;
-      const numBooks = 5 + (si % 3);
+      const rand = makeRng(
+        (mirror ? 0x6d597a : 0x531dab) ^
+          ((si + 1) * 1103515245) ^
+          ((x * 97) | 0),
+      );
+
+      let xCursor = -0.85 + (rand() - 0.5) * 0.08;
+      const numBooks = 4 + (si % 3) + (mirror ? 1 : 0);
       let lastColor = null;
+
+      // Occasionally add a horizontal stack for variety.
+      const stackChance = mirror ? 0.55 : 0.32;
+      const addStack = rand() < stackChance && si !== 0;
+      const stackSide = mirror ? -1 : 1;
+      if (addStack) {
+        const stackCount = 2 + Math.floor(rand() * 2);
+        const stackW = 0.62 + rand() * 0.2;
+        const stackX = 0.55 * stackSide;
+        for (let s = 0; s < stackCount; s++) {
+          const bookColor = getRandomBookColor(lastColor);
+          lastColor = bookColor;
+          const seed = (si + 1) * 100000 + (s + 20) * 97 + (mirror ? 1337 : 17);
+          const bMat = makeBookMaterials({ baseColor: bookColor, seed });
+          bookshelf.add(
+            box(
+              stackW,
+              0.1 + rand() * 0.03,
+              0.72 + (rand() - 0.5) * 0.05,
+              bMat,
+              stackX,
+              sy + 0.06 + s * 0.11,
+              (rand() - 0.5) * 0.08,
+              0,
+              0,
+              (rand() - 0.5) * 0.14,
+            ),
+          );
+        }
+      }
+
       for (let b = 0; b < numBooks && xCursor < 0.85; b++) {
-        const bw = 0.1 + Math.random() * 0.08;
-        const bh = 0.55 + Math.random() * 0.25;
-        const tilt = (Math.random() - 0.5) * 0.08;
+        const bw = 0.1 + rand() * 0.09;
+        const bh = 0.55 + rand() * 0.28;
+        const tilt = (rand() - 0.5) * 0.14;
+        const yaw = (rand() - 0.5) * 0.08;
+        const zShift = (rand() - 0.5) * 0.08;
+        const yJitter = (rand() - 0.5) * 0.02;
         const bookColor = getRandomBookColor(lastColor);
         lastColor = bookColor;
-        const seed =
-          (si + 1) * 100000 + b * 97 + Math.floor(Math.random() * 1e6);
+        const seed = (si + 1) * 100000 + b * 97 + (mirror ? 99991 : 12347);
         const bMat = makeBookMaterials({ baseColor: bookColor, seed });
         const book = box(
           bw - 0.015,
@@ -335,11 +541,11 @@ export function createRoomScene(scene) {
           0.72,
           bMat,
           xCursor + bw / 2,
-          sy + bh / 2,
+          sy + bh / 2 + yJitter,
+          zShift,
           0,
-          0,
-          0,
-          tilt,
+          yaw,
+          tilt * (mirror ? -1 : 1),
         );
         bookshelf.add(book);
 
@@ -360,78 +566,84 @@ export function createRoomScene(scene) {
             0.006,
             highlightMat,
             xCursor + bw / 2 - (bw - 0.015) * 0.28,
-            sy + bh / 2,
-            0.36 + 0.004,
+            sy + bh / 2 + yJitter,
+            0.36 + zShift * 0.4 + 0.004,
           ),
         );
-        xCursor += bw + 0.015;
+        xCursor += bw + 0.015 + rand() * 0.012;
       }
     });
 
-    if (!mirror) {
-      const vaseMatS = new THREE.MeshStandardMaterial({
-        color: vaseColor,
-        roughness: 0.4,
-        metalness: 0.2,
-      });
-      bookshelf.add(cyl(0.08, 0.06, 0.28, 12, vaseMatS, 0.7, 3.22, 0));
-      bookshelf.add(cyl(0.13, 0.08, 0.04, 12, vaseMatS, 0.7, 3.38, 0));
+    const decorSide = mirror ? -1 : 1;
+    const decorRand = makeRng((mirror ? 0x2f4858 : 0x1a4a8b) ^ ((x * 100) | 0));
 
-      decorColors.forEach((color, i) => {
-        const accentMat = new THREE.MeshStandardMaterial({
-          color,
-          roughness: 0.78,
-        });
-        bookshelf.add(
-          box(
-            0.42,
-            0.08,
-            0.56,
-            accentMat,
-            -0.55 + i * 0.24,
-            4.09 + i * 0.02,
-            -0.05 + i * 0.02,
-            0.02 * i,
-            0.12 - i * 0.04,
-            0,
-          ),
-        );
-      });
+    const vaseMatS = new THREE.MeshStandardMaterial({
+      color: vaseColor,
+      roughness: 0.4,
+      metalness: 0.2,
+    });
+    bookshelf.add(
+      cyl(0.08, 0.06, 0.28, 12, vaseMatS, 0.7 * decorSide, 3.22, 0.02),
+    );
+    bookshelf.add(
+      cyl(0.13, 0.08, 0.04, 12, vaseMatS, 0.7 * decorSide, 3.38, 0.02),
+    );
 
-      const sculpture = new THREE.Group();
-      sculpture.position.set(0.5, 4.05, 0.38);
-      bookshelf.add(sculpture);
-      sculpture.add(box(0.42, 0.06, 0.28, sculptureBaseMat, 0, 0.03, 0));
-      sculpture.add(cyl(0.03, 0.03, 0.34, 12, sculptureMat, 0, 0.22, 0));
-      const orb = new THREE.Mesh(
-        new THREE.SphereGeometry(0.13, 16, 16),
-        sculptureMat,
+    decorColors.forEach((color, i) => {
+      const accentMat = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.78,
+      });
+      const xBase = (-0.55 + i * 0.24) * decorSide;
+      bookshelf.add(
+        box(
+          0.42,
+          0.08,
+          0.56,
+          accentMat,
+          xBase + (decorRand() - 0.5) * 0.05,
+          4.09 + i * 0.02,
+          -0.05 + i * 0.02,
+          0.02 * i,
+          (0.12 - i * 0.04) * decorSide,
+          0,
+        ),
       );
-      orb.position.set(0, 0.45, 0);
-      orb.castShadow = true;
-      sculpture.add(orb);
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.18, 0.024, 10, 24),
-        sculptureMat,
-      );
-      ring.position.set(0, 0.45, 0);
-      ring.rotation.set(Math.PI / 3.2, 0.2, 0.4);
-      ring.castShadow = true;
-      sculpture.add(ring);
-    }
+    });
+
+    const sculpture = new THREE.Group();
+    sculpture.position.set(0.5 * -decorSide, 4.05, 0.38);
+    bookshelf.add(sculpture);
+    sculpture.add(box(0.42, 0.06, 0.28, sculptureBaseMat, 0, 0.03, 0));
+    sculpture.add(cyl(0.03, 0.03, 0.34, 12, sculptureMat, 0, 0.22, 0));
+    const orb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.13, 16, 16),
+      sculptureMat,
+    );
+    orb.position.set(0, 0.45, 0);
+    orb.castShadow = true;
+    sculpture.add(orb);
+    const ring = new THREE.Mesh(
+      new THREE.TorusGeometry(0.18, 0.024, 10, 24),
+      sculptureMat,
+    );
+    ring.position.set(0, 0.45, 0);
+    ring.rotation.set(Math.PI / 3.2, 0.2, 0.4);
+    ring.castShadow = true;
+    sculpture.add(ring);
   };
 
   buildBookshelf({
-    x: -5.6,
-    z: -0.5,
+    x: -10.85,
+    z: backWallZ + 0.85,
     bookColors: leftBookColors,
     decorColors: [0x7a2323, 0x1d3f73, 0x9a6b18, 0x385b32],
     vaseColor: 0x5c8a6e,
   });
 
   buildBookshelf({
-    x: 5.6,
-    z: -0.5,
+    x: 0.25,
+    z: backWallZ + 0.85,
     mirror: true,
     bookColors: rightBookColors,
     decorColors: [0x264653, 0x9c6644, 0x6b705c, 0xb56576],
@@ -451,7 +663,7 @@ export function createRoomScene(scene) {
     emissiveIntensity: 0.3,
   });
   const frame1 = new THREE.Group();
-  frame1.position.set(0, floorY + 5.5, backWallZ + 0.04);
+  frame1.position.set(DESK_X, floorY + 5.5, backWallZ + 0.04);
   roomRoot.add(frame1);
   frame1.add(box(2.0, 1.3, 0.06, frameMat1, 0, 0, 0));
   frame1.add(box(1.78, 1.08, 0.04, artMat1, 0, 0, 0.02));
@@ -494,7 +706,7 @@ export function createRoomScene(scene) {
     emissiveIntensity: 0.15,
   });
   const frame2 = new THREE.Group();
-  frame2.position.set(-3.8, floorY + 5.4, backWallZ + 0.04);
+  frame2.position.set(DESK_X - 2.8, floorY + 5.4, backWallZ + 0.04);
   roomRoot.add(frame2);
   frame2.add(box(1.1, 0.9, 0.06, frameMat2, 0, 0, 0));
   frame2.add(box(0.92, 0.72, 0.04, artMat2, 0, 0, 0.02));
@@ -519,7 +731,7 @@ export function createRoomScene(scene) {
     roughness: 0.98,
   });
   const frame3 = new THREE.Group();
-  frame3.position.set(3.5, floorY + 5.6, backWallZ + 0.04);
+  frame3.position.set(2.6, floorY + 5.6, backWallZ + 0.04);
   roomRoot.add(frame3);
   frame3.add(box(0.85, 1.15, 0.06, frameMat3, 0, 0, 0));
   frame3.add(box(0.68, 0.98, 0.04, artMat3, 0, 0, 0.02));
