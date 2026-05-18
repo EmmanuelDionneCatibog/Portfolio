@@ -93,4 +93,19 @@ export const PROJECTS = [
     video: null,
     logo: null,
   },
+  {
+    name: "Real-time ASCII in Terminal",
+    url: null,
+    tag: "Python / CLI Tool",
+    subject: "Computer Vision",
+    branch: "Creative Coding",
+    date: "May 2026",
+    status: "Completed",
+    shortDesc:
+      "Terminal app that streams live webcam feed as ASCII art, with controls for FPS, character ramp, brightness inversion, and horizontal mirroring.",
+    icon: null,
+    image: null,
+    video: null,
+    logo: null,
+  },
 ];
