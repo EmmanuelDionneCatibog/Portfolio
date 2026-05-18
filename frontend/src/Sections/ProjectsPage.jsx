@@ -233,6 +233,7 @@ export default function ProjectsPage() {
       enabled: false,
       yaw: 0,
       pitch: 0,
+      baseYaw: 0,
       startYaw: 0,
       startPitch: 0,
       dragging: false,
@@ -241,9 +242,17 @@ export default function ProjectsPage() {
       startFov: camera.fov,
     };
 
+    const normalizeAngleRad = (angle) => {
+      let a = angle;
+      while (a > Math.PI) a -= Math.PI * 2;
+      while (a < -Math.PI) a += Math.PI * 2;
+      return a;
+    };
+
     const syncFreeLookFromCamera = () => {
       const e = new THREE.Euler().setFromQuaternion(camera.quaternion, "YXZ");
       freeLook.yaw = e.y;
+      freeLook.baseYaw = e.y;
       freeLook.pitch = e.x;
       freeLook.startFov = camera.fov;
     };
@@ -251,6 +260,13 @@ export default function ProjectsPage() {
     const applyFreeLookToCamera = () => {
       const maxPitch = Math.PI / 2 - 0.06;
       freeLook.pitch = Math.max(-maxPitch, Math.min(maxPitch, freeLook.pitch));
+
+      // Limit panning (yaw) to 45deg left/right from the starting direction.
+      const maxYawDelta = Math.PI / 4;
+      const yawDelta = normalizeAngleRad(freeLook.yaw - freeLook.baseYaw);
+      const clampedDelta = Math.max(-maxYawDelta, Math.min(maxYawDelta, yawDelta));
+      freeLook.yaw = freeLook.baseYaw + clampedDelta;
+
       camera.rotation.order = "YXZ";
       camera.rotation.y = freeLook.yaw;
       camera.rotation.x = freeLook.pitch;
