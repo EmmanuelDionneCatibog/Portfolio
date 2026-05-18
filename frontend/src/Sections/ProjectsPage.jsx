@@ -34,7 +34,7 @@ const LOOK_START_FULL = new THREE.Vector3(0, 0.2, 0);
 const CAM_END_FULL = new THREE.Vector3(0, 1.6, 0.62);
 const LOOK_END_FULL = new THREE.Vector3(0, 1.5, -1.28);
 const ZOOM_STAGE_PREVIEW = 0.3;
-const ZOOM_STAGE_DESKTOP = 1;
+const ZOOM_STAGE_DESKTOP = 1.08;
 
 function buildCameraPath(width, height) {
   const s = getSceneScale(width, height);
