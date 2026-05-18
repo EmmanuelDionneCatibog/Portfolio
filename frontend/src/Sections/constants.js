@@ -20,7 +20,7 @@ export const PROJECTS = [
   },
   {
     name: "Portfolio",
-    url: null,
+    url: "https://github.com/EmmanuelDionneCatibog/Portfolio.git",
     tag: "React / Three.js",
     subject: "Web Development",
     branch: "Front-End",
@@ -80,7 +80,7 @@ export const PROJECTS = [
   },
   {
     name: "Stitched",
-    url: null,
+    url: "https://github.com/EmmanuelDionneCatibog/STITCHED.git",
     tag: "React / JS / Canvas",
     subject: "Creative Tools / Simulation",
     branch: "Information Systems",
@@ -95,7 +95,7 @@ export const PROJECTS = [
   },
   {
     name: "Real-time ASCII in Terminal",
-    url: null,
+    url: "https://github.com/EmmanuelDionneCatibog/ASCII-TERMINAL.git",
     tag: "Python / CLI Tool",
     subject: "Computer Vision",
     branch: "Creative Coding",
