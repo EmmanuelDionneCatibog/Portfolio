@@ -299,6 +299,9 @@ export default function ProjectsPage() {
 
     const onFreeLookWheel = (e) => {
       if (!freeLook.enabled) return;
+      // Allow normal page scrolling while in free-look mode.
+      // Use a modifier key to zoom the camera FOV instead.
+      if (!e.altKey && !e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
       const next = camera.fov + Math.sign(e.deltaY) * 2.5;
       camera.fov = Math.max(26, Math.min(78, next));
@@ -1553,7 +1556,20 @@ export default function ProjectsPage() {
           className={`projects-pan-toggle ${panMode ? "is-active" : ""}`}
           aria-label={panMode ? "Disable free look" : "Enable free look"}
           aria-pressed={panMode}
-          onClick={() => setPanMode((v) => !v)}>
+          onClick={() =>
+            setPanMode((v) => {
+              const next = !v;
+              if (next) {
+                requestAnimationFrame(() => {
+                  sectionRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                });
+              }
+              return next;
+            })
+          }>
           <svg
             viewBox="0 0 24 24"
             fill="none"

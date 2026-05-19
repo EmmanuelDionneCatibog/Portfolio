@@ -205,6 +205,22 @@ export function createRoomScene(scene) {
   rightWall.receiveShadow = true;
   roomRoot.add(rightWall);
 
+  // Ceiling
+  const roofY = floorY + wallH;
+  const roof = new THREE.Mesh(
+    new THREE.PlaneGeometry(wallW, wallD),
+    new THREE.MeshStandardMaterial({
+      color: 0x171727,
+      roughness: 1,
+      metalness: 0,
+      side: THREE.DoubleSide,
+    }),
+  );
+  roof.rotation.x = Math.PI / 2;
+  roof.position.set(0, roofY, 0);
+  roof.receiveShadow = true;
+  roomRoot.add(roof);
+
   // ─── Grid lines ──────────────────────────────────────────────────────────
   const fadedLineMat = new THREE.MeshBasicMaterial({
     color: 0xdb9834,
@@ -251,6 +267,27 @@ export function createRoomScene(scene) {
       floorGridMat,
     );
     m.position.set(i * 2.5, floorY + 0.005, 0);
+    roomRoot.add(m);
+  }
+
+  // Ceiling gridlines (aligned with floor gridlines).
+  const roofGridMat = floorGridMat.clone();
+  roofGridMat.opacity = 0.08;
+  const roofGridY = roofY - 0.03;
+  for (let i = -3; i <= 3; i++) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(wallW, 0.01, 0.025),
+      roofGridMat,
+    );
+    m.position.set(0, roofGridY, i * 2.8);
+    roomRoot.add(m);
+  }
+  for (let i = -4; i <= 4; i++) {
+    const m = new THREE.Mesh(
+      new THREE.BoxGeometry(0.025, 0.01, wallD),
+      roofGridMat,
+    );
+    m.position.set(i * 2.5, roofGridY, 0);
     roomRoot.add(m);
   }
 
