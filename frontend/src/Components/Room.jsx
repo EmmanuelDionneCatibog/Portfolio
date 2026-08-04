@@ -663,7 +663,7 @@ export function createRoomScene(scene) {
     emissiveIntensity: 0.3,
   });
   const frame1 = new THREE.Group();
-  frame1.position.set(DESK_X, floorY + 5.5, backWallZ + 0.04);
+  frame1.position.set(DESK_X, floorY + 5.3, backWallZ + 0.04);
   roomRoot.add(frame1);
   frame1.add(box(2.0, 1.3, 0.06, frameMat1, 0, 0, 0));
   frame1.add(box(1.78, 1.08, 0.04, artMat1, 0, 0, 0.02));
@@ -706,7 +706,7 @@ export function createRoomScene(scene) {
     emissiveIntensity: 0.15,
   });
   const frame2 = new THREE.Group();
-  frame2.position.set(DESK_X - 2.8, floorY + 5.4, backWallZ + 0.04);
+  frame2.position.set(DESK_X - 2.8, floorY + 5.3, backWallZ + 0.04);
   roomRoot.add(frame2);
   frame2.add(box(1.1, 0.9, 0.06, frameMat2, 0, 0, 0));
   frame2.add(box(0.92, 0.72, 0.04, artMat2, 0, 0, 0.02));
@@ -731,7 +731,7 @@ export function createRoomScene(scene) {
     roughness: 0.98,
   });
   const frame3 = new THREE.Group();
-  frame3.position.set(2.6, floorY + 5.6, backWallZ + 0.04);
+  frame3.position.set(-2.6, floorY + 5.3, backWallZ + 0.04);
   roomRoot.add(frame3);
   frame3.add(box(0.85, 1.15, 0.06, frameMat3, 0, 0, 0));
   frame3.add(box(0.68, 0.98, 0.04, artMat3, 0, 0, 0.02));
