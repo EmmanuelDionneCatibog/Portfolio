@@ -99,7 +99,6 @@ const createWoodTexture = (baseHex, grainHex) => {
 export function createDeskScene(scene) {
   const DESK_Y = 0;
   const deskWoodMap = createWoodTexture(0x3d1f08, 0x6a3a16);
-  const deskLegWoodMap = createWoodTexture(0x4a2810, 0x73401a);
 
   // Materials
   const bodyMat = new THREE.MeshStandardMaterial({
@@ -157,10 +156,22 @@ export function createDeskScene(scene) {
     roughness: 0.75,
     map: deskWoodMap,
   });
-  const deskLegMat = new THREE.MeshStandardMaterial({
-    color: 0x4a2810,
-    roughness: 0.75,
-    map: deskLegWoodMap,
+  const cabinetMat = new THREE.MeshStandardMaterial({
+    color: 0x3d1f08,
+    roughness: 0.78,
+    metalness: 0.02,
+    map: deskWoodMap,
+  });
+  const cabinetEdgeMat = new THREE.MeshStandardMaterial({
+    color: 0x2f1706,
+    roughness: 0.8,
+    metalness: 0.02,
+    map: deskWoodMap,
+  });
+  const cabinetHandleMat = new THREE.MeshStandardMaterial({
+    color: 0xb8b8bf,
+    roughness: 0.22,
+    metalness: 0.92,
   });
 	  const paperMats = [
 	    new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 }),
@@ -208,18 +219,86 @@ export function createDeskScene(scene) {
   const deskGroup = new THREE.Group();
   sceneRoot.add(deskGroup);
   deskGroup.add(box(9, 0.18, 4, deskMat, 0, DESK_Y - 0.09, 0));
-  [
-    [-4.3, -1.5],
-    [4.3, -1.5],
-    [-4.3, 1.5],
-    [4.3, 1.5],
-  ].forEach(([x, z]) => {
-    deskGroup.add(box(0.2, 2.8, 0.2, deskLegMat, x, DESK_Y - 0.09 - 1.4, z));
-  });
+
+  const createFileCabinet = (x) => {
+    const cabinet = new THREE.Group();
+
+    const CABINET_SCALE = 1.06;
+    const cabinetW = 1.55 * CABINET_SCALE;
+    const cabinetH = 2.45 * CABINET_SCALE;
+    const cabinetD = 3.25 * CABINET_SCALE;
+    const y = DESK_Y - 0.09 - cabinetH / 2;
+
+    // Main body
+    cabinet.add(box(cabinetW, cabinetH, cabinetD, cabinetMat, x, y, 0));
+
+    // Slight inset side/back edge to give a "metal shell" look
+    cabinet.add(box(cabinetW - 0.04, cabinetH - 0.04, cabinetD - 0.04, cabinetEdgeMat, x, y, 0));
+
+    // Drawer fronts (3) on the front face
+    const frontZ = cabinetD / 2 - 0.03;
+    const drawerGap = 0.06;
+    const drawerH = (cabinetH - drawerGap * 4) / 3;
+    const drawerW = cabinetW - 0.14;
+    const drawerD = 0.06;
+
+    for (let i = 0; i < 3; i++) {
+      const drawerCenterY =
+        y + cabinetH / 2 - drawerGap - drawerH / 2 - i * (drawerH + drawerGap);
+      cabinet.add(box(drawerW, drawerH, drawerD, cabinetEdgeMat, x, drawerCenterY, frontZ));
+
+      // Handle (simple bar)
+      const handleW = drawerW * 0.44;
+      const handleH = 0.045;
+      const handleD = 0.09;
+      cabinet.add(
+        box(
+          handleW,
+          handleH,
+          handleD,
+          cabinetHandleMat,
+          x,
+          drawerCenterY,
+          frontZ + 0.06,
+        ),
+      );
+    }
+
+    // Small feet
+    const footW = 0.18;
+    const footH = 0.08;
+    const footD = 0.18;
+    const footY = DESK_Y - 0.09 - cabinetH - footH / 2;
+    [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ].forEach(([sx, sz]) => {
+      cabinet.add(
+        box(
+          footW,
+          footH,
+          footD,
+          cabinetHandleMat,
+          x + sx * (cabinetW / 2 - 0.16),
+          footY,
+          sz * (cabinetD / 2 - 0.16),
+        ),
+      );
+    });
+
+    return cabinet;
+  };
+
+  // Replace thin legs with "file cabinet" pedestals (left/right), similar to the reference image.
+  deskGroup.add(createFileCabinet(-3.78));
+  deskGroup.add(createFileCabinet(3.78));
 
   // Laptop
   const laptop = new THREE.Group();
   laptop.position.set(0, DESK_Y + 0.05, 0);
+  laptop.scale.setScalar(0.9);
   sceneRoot.add(laptop);
   const base = new THREE.Group();
   laptop.add(base);
