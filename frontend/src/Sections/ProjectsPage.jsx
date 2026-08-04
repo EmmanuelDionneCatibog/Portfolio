@@ -269,7 +269,10 @@ export default function ProjectsPage() {
       // Limit panning (yaw) to 45deg left/right from the starting direction.
       const maxYawDelta = Math.PI / 4;
       const yawDelta = normalizeAngleRad(freeLook.yaw - freeLook.baseYaw);
-      const clampedDelta = Math.max(-maxYawDelta, Math.min(maxYawDelta, yawDelta));
+      const clampedDelta = Math.max(
+        -maxYawDelta,
+        Math.min(maxYawDelta, yawDelta),
+      );
       freeLook.yaw = freeLook.baseYaw + clampedDelta;
 
       camera.rotation.order = "YXZ";
@@ -343,13 +346,13 @@ export default function ProjectsPage() {
       };
     });
 
-	    let paperHoverProgress = 0;
-	    let folderHoverProgress = 0;
-	    let paperFlight = null;
-	    const PAPER_SHOOT_MS = 280;
-	    const PAPER_RETURN_END_MS = 1040;
-	    const PAPER_STAGGER_MS = 70;
-	    const PAPER_FLOAT_HOLD_MS = 800;
+    let paperHoverProgress = 0;
+    let folderHoverProgress = 0;
+    let paperFlight = null;
+    const PAPER_SHOOT_MS = 280;
+    const PAPER_RETURN_END_MS = 1040;
+    const PAPER_STAGGER_MS = 70;
+    const PAPER_FLOAT_HOLD_MS = 800;
 
     const easeOutCubic = (x) => 1 - Math.pow(1 - x, 3);
     const easeInOutCubic = (x) =>
@@ -368,7 +371,11 @@ export default function ProjectsPage() {
 
     // Certificate textures (used as an overlay on the front paper)
     const certificateLoader = new THREE.TextureLoader();
-    const certificateSources = ["/DeviceManagement.jpg", "/Python.jpg", "/Database.jpg"];
+    const certificateSources = [
+      "/DeviceManagement.jpg",
+      "/Python.jpg",
+      "/Database.jpg",
+    ];
     const certificateTextures = [null, null, null];
     certificateSources.forEach((src, i) => {
       certificateLoader.load(src, (tex) => {
@@ -411,7 +418,10 @@ export default function ProjectsPage() {
         // Match the paper's top face orientation:
         // the paper box uses Y as thickness, so its top face is the XZ plane.
         // Rotate so the plane lies on XZ and then offset toward the camera.
-        const overlayGeo = new THREE.PlaneGeometry(width * 0.975, depth * 0.975);
+        const overlayGeo = new THREE.PlaneGeometry(
+          width * 0.975,
+          depth * 0.975,
+        );
         overlayGeo.rotateX(-Math.PI / 2);
         const overlayMat = new THREE.MeshBasicMaterial({
           map: tex,
@@ -438,9 +448,9 @@ export default function ProjectsPage() {
     // Label anchors are in LOCAL scene space (before scale).
     // In the animation loop we scale them by `s` before projecting.
     const labelAnchorsLocal = {
-      laptop: new THREE.Vector3(0, 0.4, 0),
-      paper: new THREE.Vector3(-3, 0.4, 0.2),
-      folder: new THREE.Vector3(3, 0.4, 0.6),
+      laptop: new THREE.Vector3(-5.4, 0.4, 0),
+      paper: new THREE.Vector3(-8.5, 0.4, 0.2),
+      folder: new THREE.Vector3(-2.5, 0.4, 0.6),
     };
     const labelTexts = {
       laptop: "Projects",
@@ -500,14 +510,14 @@ export default function ProjectsPage() {
       return 0;
     };
 
-	    const onMouseMove = (event) => {
-	      if (panModeRef.current) return;
-	      // Don't show hover outlines while the papers are flying / parked in front.
-	      if (paperFlight) return;
-	      const rect = renderer.domElement.getBoundingClientRect();
-	      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-	      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
-	      raycaster.setFromCamera(mouse, camera);
+    const onMouseMove = (event) => {
+      if (panModeRef.current) return;
+      // Don't show hover outlines while the papers are flying / parked in front.
+      if (paperFlight) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
+      raycaster.setFromCamera(mouse, camera);
 
       const intersects = raycaster.intersectObjects([
         ...paperMeshes,
@@ -540,18 +550,18 @@ export default function ProjectsPage() {
       }
     };
 
-	    const onClick = (event) => {
-	      if (panModeRef.current) return;
-	      const rect = renderer.domElement.getBoundingClientRect();
-	      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-	      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
-	      raycaster.setFromCamera(mouse, camera);
+    const onClick = (event) => {
+      if (panModeRef.current) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = ((event.clientY - rect.top) / rect.height) * -2 + 1;
+      raycaster.setFromCamera(mouse, camera);
 
-	      const paperHits = raycaster.intersectObjects(paperMeshes);
+      const paperHits = raycaster.intersectObjects(paperMeshes);
 
-	      // Keep papers in front until user clicks outside them.
-	      // When dismissing, don't trigger any other click actions.
-	      if (paperHits.length === 0 && paperFlight?.phase === "front") {
+      // Keep papers in front until user clicks outside them.
+      // When dismissing, don't trigger any other click actions.
+      if (paperHits.length === 0 && paperFlight?.phase === "front") {
         // Hide certificates immediately when dismissing.
         paperFlight.papers.forEach((p) => {
           if (p.overlay) {
@@ -579,17 +589,17 @@ export default function ProjectsPage() {
         currentHovered = null;
         outlinePass.selectedObjects = [];
         labelPosRef.current = null;
-	        setHoverLabel(null);
-	        return;
-	      }
+        setHoverLabel(null);
+        return;
+      }
 
-	      // While papers are active, block other click interactions (like laptop zoom).
-	      if (paperFlight) return;
-	      if (raycaster.intersectObjects(laptopMeshes).length > 0) {
-	        const currentProgress = Math.max(
-	          targetProgressRef.current,
-	          scrollProgressRef.current,
-	        );
+      // While papers are active, block other click interactions (like laptop zoom).
+      if (paperFlight) return;
+      if (raycaster.intersectObjects(laptopMeshes).length > 0) {
+        const currentProgress = Math.max(
+          targetProgressRef.current,
+          scrollProgressRef.current,
+        );
 
         if (
           !showDesktopRef.current &&
@@ -679,9 +689,9 @@ export default function ProjectsPage() {
         renderer.domElement.style.cursor = "default";
         // Hide hover label ("CERTIFICATIONS") while papers are active.
         labelPosRef.current = null;
-	        setHoverLabel(null);
-	      }
-	    };
+        setHoverLabel(null);
+      }
+    };
 
     const finishCycleImmediate = () => {
       if (!paperFlight || paperFlight.phase !== "cycle") return false;
@@ -693,7 +703,8 @@ export default function ProjectsPage() {
         if (p.cycleToQuat) p.mesh.quaternion.copy(p.cycleToQuat);
       });
 
-      if (paperFlight.cycleNextOrder) paperFlight.papers = paperFlight.cycleNextOrder;
+      if (paperFlight.cycleNextOrder)
+        paperFlight.papers = paperFlight.cycleNextOrder;
       paperFlight.cycleNextOrder = null;
       paperFlight.cycleMovingMesh = null;
       paperFlight.cycleAt = null;
@@ -720,8 +731,7 @@ export default function ProjectsPage() {
       paperFlight.queuedCycleDir = null;
 
       const current = paperFlight.papers.slice();
-      const moving =
-        dir === "next" ? current[0] : current[current.length - 1];
+      const moving = dir === "next" ? current[0] : current[current.length - 1];
       const nextOrder =
         dir === "next"
           ? [...current.slice(1), current[0]]
@@ -788,7 +798,8 @@ export default function ProjectsPage() {
       if (hits.length === 0) return;
 
       const hitMesh = hits[0].object;
-      const hitPaper = paperFlight.papers.find((p) => p.mesh === hitMesh) ?? null;
+      const hitPaper =
+        paperFlight.papers.find((p) => p.mesh === hitMesh) ?? null;
       if (!hitPaper) return;
 
       dragState.active = true;
@@ -831,15 +842,20 @@ export default function ProjectsPage() {
       const rect = renderer.domElement.getBoundingClientRect();
       const dist = dragState.startWorld.distanceTo(camera.position);
       const vFov = (camera.fov * Math.PI) / 180;
-      const worldPerPxY = (2 * dist * Math.tan(vFov / 2)) / Math.max(1, rect.height);
+      const worldPerPxY =
+        (2 * dist * Math.tan(vFov / 2)) / Math.max(1, rect.height);
       const worldPerPxX = worldPerPxY * camera.aspect;
 
-      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
-
-      const offsetWorld = camRight.multiplyScalar(dx * worldPerPxX).add(
-        camUp.multiplyScalar(-dy * worldPerPxY),
+      const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(
+        camera.quaternion,
       );
+      const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(
+        camera.quaternion,
+      );
+
+      const offsetWorld = camRight
+        .multiplyScalar(dx * worldPerPxX)
+        .add(camUp.multiplyScalar(-dy * worldPerPxY));
 
       const targetWorld = dragState.startWorld
         .clone()
@@ -969,12 +985,12 @@ export default function ProjectsPage() {
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
 
-	    const onWheel = (e) => {
-	      if (panModeRef.current) return;
-	      if (paperFlight) {
-	        e.preventDefault();
-	        return;
-	      }
+    const onWheel = (e) => {
+      if (panModeRef.current) return;
+      if (paperFlight) {
+        e.preventDefault();
+        return;
+      }
       if (isRestoringRef.current) return;
       if (isMidZoomAnimation()) {
         e.preventDefault();
@@ -1006,12 +1022,12 @@ export default function ProjectsPage() {
       if (panModeRef.current) return;
       touchStartY = e.touches[0].clientY;
     };
-	    const onTouchMove = (e) => {
-	      if (panModeRef.current) return;
-	      if (paperFlight) {
-	        e.preventDefault();
-	        return;
-	      }
+    const onTouchMove = (e) => {
+      if (panModeRef.current) return;
+      if (paperFlight) {
+        e.preventDefault();
+        return;
+      }
       if (isRestoringRef.current) return;
       const dy = touchStartY - e.touches[0].clientY;
       touchStartY = e.touches[0].clientY;
@@ -1060,19 +1076,43 @@ export default function ProjectsPage() {
         freeLook.enabled = nextEnabled;
         if (freeLook.enabled) {
           syncFreeLookFromCamera();
-          renderer.domElement.addEventListener("pointerdown", onFreeLookPointerDown);
-          renderer.domElement.addEventListener("pointermove", onFreeLookPointerMove);
-          renderer.domElement.addEventListener("pointerup", onFreeLookPointerUp);
-          renderer.domElement.addEventListener("pointercancel", onFreeLookPointerUp);
+          renderer.domElement.addEventListener(
+            "pointerdown",
+            onFreeLookPointerDown,
+          );
+          renderer.domElement.addEventListener(
+            "pointermove",
+            onFreeLookPointerMove,
+          );
+          renderer.domElement.addEventListener(
+            "pointerup",
+            onFreeLookPointerUp,
+          );
+          renderer.domElement.addEventListener(
+            "pointercancel",
+            onFreeLookPointerUp,
+          );
           renderer.domElement.addEventListener("wheel", onFreeLookWheel, {
             passive: false,
           });
         } else {
           freeLook.dragging = false;
-          renderer.domElement.removeEventListener("pointerdown", onFreeLookPointerDown);
-          renderer.domElement.removeEventListener("pointermove", onFreeLookPointerMove);
-          renderer.domElement.removeEventListener("pointerup", onFreeLookPointerUp);
-          renderer.domElement.removeEventListener("pointercancel", onFreeLookPointerUp);
+          renderer.domElement.removeEventListener(
+            "pointerdown",
+            onFreeLookPointerDown,
+          );
+          renderer.domElement.removeEventListener(
+            "pointermove",
+            onFreeLookPointerMove,
+          );
+          renderer.domElement.removeEventListener(
+            "pointerup",
+            onFreeLookPointerUp,
+          );
+          renderer.domElement.removeEventListener(
+            "pointercancel",
+            onFreeLookPointerUp,
+          );
           renderer.domElement.removeEventListener("wheel", onFreeLookWheel);
         }
       }
@@ -1116,7 +1156,8 @@ export default function ProjectsPage() {
             new THREE.Matrix4().lookAt(toPos, toTarget, camera.up),
           );
           camera.quaternion.copy(restoreAnim.fromQuat).slerp(qTo, eased);
-          camera.fov = restoreAnim.fromFov + (getFov(w, h) - restoreAnim.fromFov) * eased;
+          camera.fov =
+            restoreAnim.fromFov + (getFov(w, h) - restoreAnim.fromFov) * eased;
           camera.updateProjectionMatrix();
           if (raw >= 1) restoreAnim = null;
         } else {
@@ -1150,9 +1191,9 @@ export default function ProjectsPage() {
           (paperTargets[i].ry - paperOrigins[i].ry) * paperHoverProgress;
       });
 
-	      // Paper "fly off left then pop back in front of camera"
-	      if (paperFlight) {
-	        const now = performance.now();
+      // Paper "fly off left then pop back in front of camera"
+      if (paperFlight) {
+        const now = performance.now();
 
         const returnDur = PAPER_RETURN_END_MS - PAPER_SHOOT_MS;
 
@@ -1161,12 +1202,12 @@ export default function ProjectsPage() {
           ensureCertificateOverlays();
         } else if (paperFlight.phase === "enter") {
           let allDone = true;
-	          paperFlight.papers.forEach((p, idx) => {
-	            const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
-	            if (elapsed <= 0) {
-	              allDone = false;
-	              return;
-	            }
+          paperFlight.papers.forEach((p, idx) => {
+            const elapsed = now - paperFlight.startAt - idx * PAPER_STAGGER_MS;
+            if (elapsed <= 0) {
+              allDone = false;
+              return;
+            }
 
             // Phase 1: shoot left (stack -> offscreen)
             if (elapsed < PAPER_SHOOT_MS) {
@@ -1190,7 +1231,9 @@ export default function ProjectsPage() {
               }
 
               if (p.returnStartQuat) {
-                p.mesh.quaternion.copy(p.returnStartQuat).slerp(p.targetQuat, t);
+                p.mesh.quaternion
+                  .copy(p.returnStartQuat)
+                  .slerp(p.targetQuat, t);
               } else {
                 p.mesh.quaternion.copy(p.targetQuat);
               }
@@ -1279,7 +1322,8 @@ export default function ProjectsPage() {
             // hits Back/Next before the previous cycle finishes).
             const queuedDir = paperFlight.queuedCycleDir;
             paperFlight.queuedCycleDir = null;
-            if (queuedDir === "next" || queuedDir === "prev") beginCycle(queuedDir);
+            if (queuedDir === "next" || queuedDir === "prev")
+              beginCycle(queuedDir);
           }
         } else if (paperFlight.phase === "dismiss") {
           // Safety: ensure overlays are hidden while returning to the desk.
@@ -1316,7 +1360,10 @@ export default function ProjectsPage() {
 
             // Reverse Phase 1: offscreen -> "floating stack" (above desk)
             const floatDur = 340;
-            const t2Raw = Math.min(1, Math.max(0, (elapsed - returnDur) / floatDur));
+            const t2Raw = Math.min(
+              1,
+              Math.max(0, (elapsed - returnDur) / floatDur),
+            );
             const t2 = easeInOutCubic(t2Raw);
             const floatPos = p.startPos.clone();
             if (typeof p.paperIndex === "number" && p.paperIndex >= 0) {
@@ -1348,7 +1395,6 @@ export default function ProjectsPage() {
               allDone = false;
               return;
             }
-
           });
 
           if (allDone) {
@@ -1373,14 +1419,14 @@ export default function ProjectsPage() {
         }
       }
 
-	      // Ensure the "CERTIFICATIONS" hover label doesn't linger behind.
-	      if (paperFlight && hoverLabel) setHoverLabel(null);
+      // Ensure the "CERTIFICATIONS" hover label doesn't linger behind.
+      if (paperFlight && hoverLabel) setHoverLabel(null);
 
-	      // Folder hover
-	      folderHoverProgress +=
-	        ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
-	      if (folderTopPivot)
-	        folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
+      // Folder hover
+      folderHoverProgress +=
+        ((currentHovered === "folder" ? 1 : 0) - folderHoverProgress) * 0.07;
+      if (folderTopPivot)
+        folderTopPivot.rotation.z = folderHoverProgress * Math.PI * 0.25;
 
       composer.render();
 
@@ -1396,7 +1442,8 @@ export default function ProjectsPage() {
 
         // Approximate paper half-width in screen space by projecting a point
         // offset along camera-right.
-        const camRight = paperFlight.camRightWorld ?? new THREE.Vector3(1, 0, 0);
+        const camRight =
+          paperFlight.camRightWorld ?? new THREE.Vector3(1, 0, 0);
         const halfWWorld = 0.85; // ~ paper width / 2 (1.7/2)
         const rightEdgeNdc = baseWorld
           .clone()
@@ -1414,19 +1461,22 @@ export default function ProjectsPage() {
           rightX: centerX + halfWpx + edgePad,
           visible: true,
         };
-          const prev = paperNavRef.current;
-          if (
-            !prev ||
-            prev.visible !== next.visible ||
-            Math.abs((prev.x ?? 0) - next.x) > 0.5 ||
-            Math.abs((prev.y ?? 0) - next.y) > 0.5 ||
-            Math.abs((prev.leftX ?? 0) - next.leftX) > 0.5 ||
-            Math.abs((prev.rightX ?? 0) - next.rightX) > 0.5
-          ) {
-            paperNavRef.current = next;
-            setPaperNav(next);
-          }
-      } else if (paperFlight?.phase !== "cycle" && paperNavRef.current?.visible) {
+        const prev = paperNavRef.current;
+        if (
+          !prev ||
+          prev.visible !== next.visible ||
+          Math.abs((prev.x ?? 0) - next.x) > 0.5 ||
+          Math.abs((prev.y ?? 0) - next.y) > 0.5 ||
+          Math.abs((prev.leftX ?? 0) - next.leftX) > 0.5 ||
+          Math.abs((prev.rightX ?? 0) - next.rightX) > 0.5
+        ) {
+          paperNavRef.current = next;
+          setPaperNav(next);
+        }
+      } else if (
+        paperFlight?.phase !== "cycle" &&
+        paperNavRef.current?.visible
+      ) {
         paperNavRef.current = { x: 0, y: 0, visible: false };
         setPaperNav(null);
       }
@@ -1452,8 +1502,14 @@ export default function ProjectsPage() {
       renderer.domElement.removeEventListener("click", onClick);
       renderer.domElement.removeEventListener("pointerdown", onPointerDown);
       renderer.domElement.removeEventListener("pointermove", onPointerMove);
-      renderer.domElement.removeEventListener("pointerdown", onFreeLookPointerDown);
-      renderer.domElement.removeEventListener("pointermove", onFreeLookPointerMove);
+      renderer.domElement.removeEventListener(
+        "pointerdown",
+        onFreeLookPointerDown,
+      );
+      renderer.domElement.removeEventListener(
+        "pointermove",
+        onFreeLookPointerMove,
+      );
       renderer.domElement.removeEventListener("pointerup", onFreeLookPointerUp);
       renderer.domElement.removeEventListener(
         "pointercancel",

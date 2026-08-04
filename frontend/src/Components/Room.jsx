@@ -424,7 +424,7 @@ export function createRoomScene(scene) {
     // Ceiling gridlines (aligned with floor gridlines).
     const roofGridMat = floorGridMat.clone();
     roofGridMat.opacity = 0.08;
-    const roofGridY = roofY - 0.03;
+    const roofGridY = floorY + wallH - 0.03;
     for (let i = -3; i <= 3; i++) {
       const m = new THREE.Mesh(
         new THREE.BoxGeometry(wallW, 0.01, 0.025),
